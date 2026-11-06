@@ -46,7 +46,9 @@ export const settingsSchema = z
     reducedMotion: z.boolean().default(false),
     showOverlay: z.boolean().default(true),
     captions: z.boolean().default(false),
-    overlayPosition: z.enum(['bottom', 'top']).default('bottom'),
+    overlayPosition: z.enum(['bottom', 'top', 'caret', 'custom']).default('bottom'),
+    overlayCustomX: z.number().int().min(0).max(100).default(50),
+    overlayCustomY: z.number().int().min(0).max(100).default(100),
     overlaySize: z.enum(['compact', 'standard', 'large']).default('standard'),
     waveform: z.enum(['bars', 'dots']).default('bars'),
     accent: z.enum(['blue', 'violet', 'teal']).default('blue'),
@@ -134,6 +136,7 @@ export interface Bridge {
       | 'micTest'
       | 'micStop'
       | 'testSound'
+      | 'previewOverlay'
       | 'diagnostics'
       | 'pasteTest',
   ): Promise<ActionResult>;

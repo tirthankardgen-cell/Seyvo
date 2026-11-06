@@ -1,6 +1,12 @@
 import React, { useEffect, useState, useRef, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { ActionResult, HistoryEntry, SettingsPatch, Status } from '../shared/contracts';
+import type {
+  ActionResult,
+  HistoryEntry,
+  Settings,
+  SettingsPatch,
+  Status,
+} from '../shared/contracts';
 import { brand } from '../shared/brand';
 import { codingVocabulary } from '../shared/vocabulary';
 import './styles.css';
@@ -789,9 +795,61 @@ function App() {
                   [
                     ['bottom', 'Bottom of active monitor'],
                     ['top', 'Top of active monitor'],
+                    ['caret', 'Near caret · experimental'],
+                    ['custom', 'Custom position'],
                   ],
-                  (value) => void patch({ overlayPosition: value as 'bottom' | 'top' }),
+                  (value) => void patch({ overlayPosition: value as Settings['overlayPosition'] }),
                 )}
+                {s.overlayPosition === 'custom' &&
+                  (['overlayCustomX', 'overlayCustomY'] as const).map((coordinate) => (
+                    <label className="setting-row" key={coordinate}>
+                      <span>
+                        <strong>
+                          {coordinate === 'overlayCustomX'
+                            ? 'Horizontal position (%)'
+                            : 'Vertical position (%)'}
+                        </strong>
+                        <small>
+                          {coordinate === 'overlayCustomX'
+                            ? '0 is left; 100 is right.'
+                            : '0 is top; 100 is bottom.'}
+                        </small>
+                      </span>
+                      <input
+                        className="position-input"
+                        key={s[coordinate]}
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        aria-label={
+                          coordinate === 'overlayCustomX'
+                            ? 'Horizontal position (%)'
+                            : 'Vertical position (%)'
+                        }
+                        defaultValue={s[coordinate]}
+                        disabled={busy || active}
+                        onBlur={(event) => {
+                          if (event.currentTarget.valueAsNumber !== s[coordinate])
+                            void patch({ [coordinate]: event.currentTarget.valueAsNumber });
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') event.currentTarget.blur();
+                        }}
+                      />
+                    </label>
+                  ))}
+                <p className="hint">
+                  Near caret uses the insertion point captured when dictation starts, with a
+                  bottom-position fallback if unavailable. All positions stay inside the monitor's
+                  work area. Preview uses the monitor under your pointer and opens no microphone.
+                </p>
+                <button
+                  disabled={busy || active || !s.showOverlay}
+                  onClick={() => void run(window.seyvo.action('previewOverlay'))}
+                >
+                  Preview bubble
+                </button>
                 {select(
                   'Bubble size',
                   s.overlaySize,

@@ -250,6 +250,7 @@ async function run(): Promise<void> {
       nativeTheme.themeSource = next.theme;
       if (storage.warning) coordinator.message = storage.warning;
       if (!next.showOverlay) windows.hideOverlay();
+      else windows.refreshOverlay();
       publish();
       return next;
     } finally {
@@ -313,7 +314,15 @@ async function run(): Promise<void> {
     else if (action === 'retry') await coordinator.retry();
     else if (action === 'dismiss') coordinator.dismiss();
     else if (action === 'micTest') await coordinator.start(true);
-    else if (action === 'testSound') {
+    else if (action === 'previewOverlay') {
+      const available = () => !coordinator.busy && coordinator.phase !== 'inserting';
+      if (!storage.settings.showOverlay || !available())
+        throw new AppError('Enable the bubble and finish recording before previewing.');
+      if (overlayTimer) clearTimeout(overlayTimer);
+      await windows.showOverlay();
+      publish();
+      if (available()) overlayTimer = setTimeout(() => windows.hideOverlay(), 3000);
+    } else if (action === 'testSound') {
       if (!storage.settings.soundCues || coordinator.busy)
         throw new AppError('Enable sound cues and finish recording before previewing.');
       await native.cue('start');
@@ -401,6 +410,7 @@ async function run(): Promise<void> {
         'micTest',
         'micStop',
         'testSound',
+        'previewOverlay',
         'diagnostics',
         'pasteTest',
       ])

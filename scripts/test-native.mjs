@@ -68,6 +68,14 @@ try {
   );
   const text = 'Seyvo Windows test — नमस्ते 🌍\nSecond paragraph.';
   const directText = 'Seyvo Windows test — नमस्ते 🌍';
+  const caret = target.result.caret;
+  assert.ok(caret && Number.isFinite(caret.x) && Number.isFinite(caret.y));
+  assert.ok(caret.height > 0 && caret.width >= 0);
+  assert.ok(caret.x >= target.result.x && caret.x < target.result.x + target.result.width);
+  assert.ok(caret.y >= target.result.y && caret.y < target.result.y + target.result.height);
+  results.push(
+    'PASS: native caret geometry is inside the owned target window; no field text is read by capture.',
+  );
   const direct = await call('insert', {
     token: target.result.token,
     text: directText,

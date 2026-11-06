@@ -949,3 +949,7 @@ summary:focus-visible {
     color: LinkText;
   }
 }
+.setting-row .position-input {
+  width: 7rem;
+  max-width: 100%;
+}

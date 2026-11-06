@@ -53,7 +53,7 @@ export class Windows {
         details.mediaType === 'audio',
     );
     const reposition = () => {
-      if (this.overlay?.isVisible()) this.positionOverlay();
+      this.refreshOverlay();
     };
     screen.on('display-metrics-changed', reposition);
     screen.on('display-removed', reposition);
@@ -145,20 +145,27 @@ export class Windows {
     this.positionOverlay();
     this.overlay.showInactive();
   }
+  refreshOverlay(): void {
+    if (this.overlay?.isVisible()) this.positionOverlay();
+  }
   private positionOverlay(): void {
     if (!this.overlay || this.overlay.isDestroyed()) return;
     const target = this.overlayTarget;
-    const point = target
-      ? screen.screenToDipPoint({
-          x: target.x + Math.max(0, target.width / 2),
-          y: target.y + Math.max(0, target.height / 2),
-        })
-      : screen.getCursorScreenPoint();
+    const point = target?.caret
+      ? screen.screenToDipPoint({ x: target.caret.x, y: target.caret.y })
+      : target
+        ? screen.screenToDipPoint({
+            x: target.x + Math.max(0, target.width / 2),
+            y: target.y + Math.max(0, target.height / 2),
+          })
+        : screen.getCursorScreenPoint();
     const area = screen.getDisplayNearestPoint(point).workArea;
-    this.overlay.setBounds(overlayBounds(area, this.settings()));
+    const caret = target?.caret ? screen.screenToDipRect(null, target.caret) : undefined;
+    this.overlay.setBounds(overlayBounds(area, this.settings(), caret));
   }
   hideOverlay(): void {
     ++this.overlayRequest;
+    this.overlayTarget = undefined;
     this.overlay?.hide();
   }
   broadcast(status: Status): void {

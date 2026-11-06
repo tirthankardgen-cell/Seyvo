@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 — unreleased
+
+Add experimental near-caret and custom percentage-based bubble placement, with work-area bounds, above-caret placement near the bottom edge and a bottom fallback when caret geometry is unavailable. Native capture obtains only caret rectangles; it never reads field text. Add a microphone-free bubble preview that cannot hide a newer recording.
+
+Persist custom coordinates with bounded validation and migration defaults. Extend geometry, native caret, settings/restart and preview lifecycle coverage. Make Electron test shutdown release its pending debugger request before quitting. Add a packaged Windows startup/idle benchmark with explicit measurement limits.
+
 ## 0.1.3 — validation
 
 Discover microphones through the authorized recorder so Settings can offer real input devices without granting the dashboard microphone permission. Keep device discovery local and bounded, preserve a saved selection before discovery, and refresh available inputs during capture.

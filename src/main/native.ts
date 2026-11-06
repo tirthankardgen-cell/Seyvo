@@ -9,6 +9,15 @@ export const targetSchema = z.object({
   y: z.number(),
   width: z.number(),
   height: z.number(),
+  caret: z
+    .object({
+      x: z.number().finite(),
+      y: z.number().finite(),
+      width: z.number().min(0).max(2000),
+      height: z.number().positive().max(2000),
+    })
+    .nullable()
+    .optional(),
 });
 export type Target = z.infer<typeof targetSchema>;
 export class NativeBridge {

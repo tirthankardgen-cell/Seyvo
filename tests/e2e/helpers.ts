@@ -4,11 +4,15 @@ import { expect, type ElectronApplication } from '@playwright/test';
 export async function quitApp(app: ElectronApplication): Promise<void> {
   const child = app.process();
   if (child.exitCode === null) {
-    await app
-      .evaluate(({ app }) => app.quit())
-      .catch(() => {
-        // Closing the process can close CDP before it replies to evaluate.
+    try {
+      await app.evaluate(({ app }) => {
+        // Release the pending debugger request before its context is destroyed.
+        setTimeout(() => app.quit(), 100);
       });
-    await expect.poll(() => child.exitCode, { timeout: 10000 }).toBe(0);
+      await expect.poll(() => child.exitCode, { timeout: 10000 }).toBe(0);
+    } finally {
+      // A failed exit assertion must not strand this owned test process.
+      if (child.exitCode === null) child.kill();
+    }
   }
 }

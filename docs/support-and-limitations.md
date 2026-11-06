@@ -22,6 +22,8 @@ Smart mode uses Google's native cleanup only; no second paid rewrite call. No au
 
 Sound cues are off by default. Enable them and use Preview sound cue to check the Windows output device/mixer. Coding vocabulary is opt-in in Dictionary; the complete term list is visible, user terms take priority and the combined provider vocabulary stays within 1,000 entries. Bubble size is compact, standard or large. Captions remain off by default.
 
-Not shipped: push-to-talk, ARM64, automatic updates, snippets, near-caret/custom-position overlay, automatic update channels or remote synchronization. Overlay placement is top/bottom of the target monitor. Direct Unicode rejects newlines to avoid submission. The product remains a validation build until the release matrix passes. See `requirements-evidence.md` for the full specification audit and explicit deviations.
+Development version 0.1.4 adds near-caret/custom bubble placement. Near-caret is experimental: it uses the insertion point captured at activation, positions above it if needed and falls back to the bottom when geometry is missing. Custom percentages are relative to the active monitor's available work area. Preview uses the monitor under the pointer and does not open the microphone. Version 0.1.3 offers top/bottom placement only.
+
+Not shipped: push-to-talk, ARM64, automatic updates, snippets, automatic update channels or remote synchronization. Direct Unicode rejects newlines to avoid submission. The product remains a validation build until the release matrix passes. See `requirements-evidence.md` for the full specification audit and explicit deviations.
 
 Data: `%APPDATA%\seyvo`; uninstall preserves it. Follow `PRIVACY.md` for deliberate removal. Report only app version, Windows build, target executable and coarse diagnostics; never submit private keys or speech.

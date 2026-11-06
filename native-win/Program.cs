@@ -25,6 +25,7 @@ internal static class Program {
   [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder name,int size);
   [DllImport("user32.dll",EntryPoint="GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h,int index);
   [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT rect);
+  [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr window,ref POINT point);
   [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll", SetLastError=true)] static extern uint SendInput(uint count, INPUT[] inputs, int size);
   [DllImport("user32.dll")] static extern bool OpenClipboard(IntPtr owner);
@@ -97,6 +98,28 @@ internal static class Program {
     TextPatternRange[] ranges = ((TextPattern)pattern).GetSelection();
     return ranges.Length == 1 ? ranges[0].Clone() : null;
   }
+  static object ScreenCaret(GUIINFO gui, TextPatternRange selection) {
+    if(gui.Caret!=IntPtr.Zero) {
+      int width=gui.CaretRect.Right-gui.CaretRect.Left, height=gui.CaretRect.Bottom-gui.CaretRect.Top;
+      POINT origin=new POINT { X=gui.CaretRect.Left, Y=gui.CaretRect.Top };
+      if(width>=0 && width<=2000 && height>0 && height<=2000 && ClientToScreen(gui.Caret,ref origin))
+        return new { x=origin.X, y=origin.Y, width=width, height=height };
+    }
+    // Geometry only: never call GetText. Some browser controls expose a narrow
+    // selection rectangle even when they do not own a Win32 caret window.
+    try {
+      if(selection!=null) {
+        var rectangles=selection.GetBoundingRectangles();
+        if(rectangles.Length==1) {
+          var rect=rectangles[0];
+          if(!rect.IsEmpty && rect.Width>=0 && rect.Width<=8 && rect.Height>0 && rect.Height<=2000 &&
+             !Double.IsInfinity(rect.X) && !Double.IsInfinity(rect.Y) && !Double.IsNaN(rect.X) && !Double.IsNaN(rect.Y))
+            return new { x=(int)Math.Round(rect.X), y=(int)Math.Round(rect.Y), width=(int)Math.Ceiling(rect.Width), height=(int)Math.Ceiling(rect.Height) };
+        }
+      }
+    } catch { }
+    return null;
+  }
   static void ClearTargets() {
     foreach(Target target in Targets.Values) {
       if(target.SelectionListener!=null) {
@@ -124,7 +147,7 @@ internal static class Program {
     try { Automation.AddAutomationEventHandler(TextPattern.TextSelectionChangedEvent,element,TreeScope.Element,target.SelectionListener); }
     catch { target.SelectionListener=null; }
     string token = Guid.NewGuid().ToString("N"); Targets[token] = target;
-    return new { token=token, app=target.App, x=bounds.Left, y=bounds.Top, width=bounds.Right-bounds.Left, height=bounds.Bottom-bounds.Top };
+    return new { token=token, app=target.App, x=bounds.Left, y=bounds.Top, width=bounds.Right-bounds.Left, height=bounds.Bottom-bounds.Top, caret=ScreenCaret(gui,target.Selection) };
   }
   static void Verify(Target target) {
     if(target.InputAttempted) throw new InvalidOperationException("input-already-attempted");
