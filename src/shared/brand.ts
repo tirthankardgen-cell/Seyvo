@@ -1,6 +1,7 @@
 export const brand = {
   name: 'Seyvo',
   tagline: 'Speak. Refine. Paste.',
+  maintainer: 'Tirthankar Dasgupta',
   appId: 'com.tirthankardgen.seyvo',
   repository: 'https://github.com/tirthankardgen-cell/Seyvo',
   model: 'gemini-3.5-transcribe-live',
@@ -12,5 +13,7 @@ export const brand = {
     releases: 'https://github.com/tirthankardgen-cell/Seyvo/releases',
     help: 'https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/support-and-limitations.md',
     source: 'https://github.com/tirthankardgen-cell/Seyvo',
+    contributors: 'https://github.com/tirthankardgen-cell/Seyvo/graphs/contributors',
+    appPrivacy: 'https://github.com/tirthankardgen-cell/Seyvo/blob/main/PRIVACY.md',
   },
 } as const;

@@ -2,6 +2,7 @@ import { WebSocket } from 'ws';
 import type { AudioTranscriptionConfig, LiveServerMessage } from '@google/genai';
 import { brand } from '../../shared/brand';
 import type { Settings } from '../../shared/contracts';
+import { providerVocabulary } from '../../shared/vocabulary';
 import { AppError, providerError } from '../../shared/errors';
 import { TranscriptAssembler } from './assembler';
 import type { FinalTranscript, TranscriptionProvider } from './provider';
@@ -75,7 +76,7 @@ export class GeminiLive implements TranscriptionProvider {
         const transcription: AudioTranscriptionConfig = {
           mode: settings.mode as AudioTranscriptionConfig['mode'],
           languageCodes: settings.languages,
-          customVocabulary: settings.dictionary,
+          customVocabulary: providerVocabulary(settings),
         };
         socket.send(
           JSON.stringify({

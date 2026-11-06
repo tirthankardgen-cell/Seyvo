@@ -30,7 +30,9 @@ Fetched `https://ai.google.dev/gemini-api/docs/live-api/live-transcribe` and Goo
 | 3: Product finish | Onboarding including a practice field, settings persistence, local mic test, dictionary import/export, encrypted opt-in history, themes, reduced motion, diagnostics, real screenshots and documentation implemented. |
 | 4: Distribution | NSIS x64 installer built and upgraded in place. Packaged native resources, production fuses, local-renderer enforcement, startup roundtrip and microphone open/stop passed. Full dependency audit: zero vulnerabilities. Signing credentials, formal naming clearance and the broader acceptance matrix remain external launch gates. |
 
-Latest core gate: 27 automated tests, lint, typecheck and production build passed; Electron E2E passed. Tests mock Google/native ports only at the unit/integration tier. The opt-in live test has no Google mock and does not persist speech or credentials in artifacts.
+Latest core gate: 33 automated tests, lint, typecheck and production build passed; all six Electron E2E scenarios passed. Tests mock Google/native ports only at the unit/integration tier. The opt-in live test has no Google mock and does not persist speech or credentials in artifacts.
+
+The 0.1.2 fidelity audit completed sound cues, coding vocabulary, overlay sizes, dictionary editing and About build metadata. It also fixed caption clipping and hidden recorder cleanup, tightened editable-target checks, and added scale/zoom, persistence, crash/suspend/lock and second-instance coverage. The complete mapping and remaining gates are in `requirements-evidence.md`.
 
 Live testing exposed and fixed three integration issues: CommonJS WebSocket import interop; EXDEV during same-directory AppData renames (now a flushed, checksummed recovery journal); and the transcription service's generationComplete signal without optional finished/turnComplete fields. Explicit activityStart/activityEnd boundaries follow Google's current manual-VAD protocol. A subsequent real clipboard test identified sequence publication after CloseClipboard; the helper now samples afterward and also checks ownership.
 

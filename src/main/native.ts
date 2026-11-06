@@ -60,9 +60,11 @@ export class NativeBridge {
     this.available = true;
   }
   private errorMessage(code?: string): string {
+    if (code === 'sound-unavailable')
+      return 'Windows could not play the sound. Check your output device and volume mixer.';
     if (code === 'input-already-attempted')
       return 'Input was already attempted once. Check your destination; use Copy to avoid an automatic duplicate.';
-    if (code === 'choose-target')
+    if (code === 'choose-target' || code === 'choose-text-field')
       return 'Click a text field in another application, then use your shortcut.';
     if (code?.startsWith('clipboard'))
       return 'The clipboard could not be safely preserved. Use Copy or direct Unicode mode, then retry.';
@@ -73,7 +75,7 @@ export class NativeBridge {
     return 'The original field is unavailable, changed, or protected. Nothing further was inserted. Copy your text or refocus the original field and retry.';
   }
   request(
-    command: 'ping' | 'capture' | 'insert' | 'clear',
+    command: 'ping' | 'capture' | 'insert' | 'clear' | 'cue',
     fields: Record<string, unknown> = {},
     timeoutMs = 5000,
   ): Promise<unknown> {
@@ -98,6 +100,9 @@ export class NativeBridge {
     return targetSchema.parse(
       await this.request('capture', { ownPid: process.pid, allowPractice }),
     );
+  }
+  async cue(cue: 'start' | 'stop' | 'error'): Promise<void> {
+    await this.request('cue', { cue });
   }
   async insert(target: Target, text: string, method: 'paste' | 'unicode'): Promise<void> {
     await this.request('insert', { token: target.token, text, method });

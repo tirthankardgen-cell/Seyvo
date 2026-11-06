@@ -32,10 +32,46 @@ function fixture() {
     saveHistory: vi.fn().mockResolvedValue(undefined),
     changed: vi.fn(),
     overlay: vi.fn(),
+    cue: vi.fn(),
   };
   return { settings, provider, ports, coordinator: new SessionCoordinator(ports) };
 }
 describe('single session authority', () => {
+  it('honors opt-in cues without duplicates, and only plays stop after microphone drain', async () => {
+    const f = fixture();
+    f.settings.soundCues = true;
+    await f.coordinator.start();
+    expect(f.ports.cue).toHaveBeenCalledExactlyOnceWith('start');
+    let drained!: () => void;
+    vi.mocked(f.ports.stopRecord).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          drained = resolve;
+        }),
+    );
+    const stopping = f.coordinator.stop();
+    await f.coordinator.stop();
+    expect(f.ports.cue).not.toHaveBeenCalledWith('stop');
+    drained();
+    await stopping;
+    expect(vi.mocked(f.ports.cue).mock.calls).toEqual([['start'], ['stop']]);
+    f.coordinator.dismiss();
+    vi.mocked(f.ports.cue).mockClear();
+    await f.coordinator.start(true);
+    await f.coordinator.stop();
+    expect(f.ports.cue).not.toHaveBeenCalled();
+  });
+  it('keeps cues off by default and emits an error cue after cleanup when enabled', async () => {
+    const f = fixture();
+    await f.coordinator.start();
+    await f.coordinator.cancel();
+    expect(f.ports.cue).not.toHaveBeenCalled();
+    f.settings.soundCues = true;
+    await f.coordinator.start();
+    await f.coordinator.fail(new AppError('Network lost'));
+    expect(f.coordinator.microphoneActive).toBe(false);
+    expect(vi.mocked(f.ports.cue).mock.calls).toEqual([['start'], ['error']]);
+  });
   it('refuses a new session until microphone cancellation has finished', async () => {
     const f = fixture();
     await f.coordinator.start();

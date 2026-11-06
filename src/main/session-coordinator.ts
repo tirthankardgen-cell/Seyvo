@@ -16,6 +16,7 @@ export interface SessionPorts {
   saveHistory(text: string, app: string): Promise<void>;
   changed(): void;
   overlay(target?: Target): void;
+  cue(kind: 'start' | 'stop' | 'error'): void;
 }
 export class SessionCoordinator {
   phase: Phase = 'idle';
@@ -115,6 +116,7 @@ export class SessionCoordinator {
         return;
       }
       this.microphoneActive = true;
+      if (!local && settings.soundCues) this.ports.cue('start');
       current.started = Date.now();
       this.change(
         'listening',
@@ -169,6 +171,7 @@ export class SessionCoordinator {
       this.microphoneActive = false;
       this.level = 0;
       if (this.session !== current) return;
+      if (!current.local && current.settings.soundCues) this.ports.cue('stop');
       if (current.local) {
         await this.cleanup(current);
         this.change('idle', 'Microphone test finished. No audio was uploaded.');
@@ -189,6 +192,7 @@ export class SessionCoordinator {
         this.message = 'Could not save history. Current text remains available.';
       });
       if (!final.complete) {
+        if (current.settings.soundCues) this.ports.cue('error');
         this.change(
           'recovery',
           'Finalization timed out. Completed segments are saved here; the last words may be missing.',
@@ -224,6 +228,7 @@ export class SessionCoordinator {
       await this.insertionOperation;
       this.change('recovery', 'Insertion may have failed. Check your target before retrying.');
     } catch (error) {
+      if (this.ports.settings().soundCues) this.ports.cue('error');
       this.change('recovery', publicError(error));
     } finally {
       this.insertionOperation = undefined;
@@ -239,13 +244,17 @@ export class SessionCoordinator {
     this.recovery = current.provider?.text ?? '';
     this.recoveryTarget = current.target;
     await this.cleanup(current);
+    if (!current.local && current.settings.soundCues) this.ports.cue('error');
     this.change(this.recovery ? 'recovery' : 'error', publicError(error));
   }
   async cancel(): Promise<void> {
     if (this.phase === 'inserting')
       throw new AppError('An insertion transaction is already in progress.');
-    if (this.session) await this.cleanup(this.session);
-    else await this.cleanupOperation;
+    if (this.session) {
+      const current = this.session;
+      await this.cleanup(current);
+      if (!current.local && current.settings.soundCues) this.ports.cue('stop');
+    } else await this.cleanupOperation;
     this.interim = '';
     this.change(this.recovery ? 'recovery' : 'idle', 'Recording cancelled. Microphone is off.');
   }

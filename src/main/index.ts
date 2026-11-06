@@ -32,6 +32,8 @@ import { Windows } from './windows';
 import { GeminiLive } from './transcription/gemini-live';
 import { SessionCoordinator } from './session-coordinator';
 
+declare const __SEYVO_BUILD__: string;
+
 const profile = app.commandLine.getSwitchValue('user-data-dir');
 if (profile) app.setPath('userData', profile);
 app.setAppUserModelId(brand.appId);
@@ -101,6 +103,10 @@ async function run(): Promise<void> {
         ...entries,
       ]),
     changed: () => publish(),
+    // Cue failures must not interrupt speech or input. Preview reports failures.
+    cue: (kind) => {
+      void native.cue(kind).catch(() => {});
+    },
     overlay: (target) => {
       void windows.showOverlay(target).then(publish);
     },
@@ -141,6 +147,7 @@ async function run(): Promise<void> {
       startup: app.getLoginItemSettings().openAtLogin,
       startupAvailable: app.isPackaged,
       version: app.getVersion(),
+      buildHash: __SEYVO_BUILD__,
       settings: storage.settings,
     };
   }
@@ -303,13 +310,18 @@ async function run(): Promise<void> {
     else if (action === 'retry') await coordinator.retry();
     else if (action === 'dismiss') coordinator.dismiss();
     else if (action === 'micTest') await coordinator.start(true);
-    else if (action === 'quit') await quit();
+    else if (action === 'testSound') {
+      if (!storage.settings.soundCues || coordinator.busy)
+        throw new AppError('Enable sound cues and finish recording before previewing.');
+      await native.cue('start');
+    } else if (action === 'quit') await quit();
     else if (action === 'diagnostics')
       clipboard.writeText(
         JSON.stringify(
           {
             app: brand.name,
             version: app.getVersion(),
+            buildHash: __SEYVO_BUILD__,
             os: process.platform,
             architecture: process.arch,
             electron: process.versions.electron,
@@ -383,6 +395,7 @@ async function run(): Promise<void> {
         'quit',
         'micTest',
         'micStop',
+        'testSound',
         'diagnostics',
         'pasteTest',
       ])
@@ -425,7 +438,17 @@ async function run(): Promise<void> {
   });
   handle('app:link', async (input) => {
     const link = z
-      .enum(['keys', 'pricing', 'terms', 'privacy', 'releases', 'help', 'source'])
+      .enum([
+        'keys',
+        'pricing',
+        'terms',
+        'privacy',
+        'releases',
+        'help',
+        'source',
+        'contributors',
+        'appPrivacy',
+      ])
       .parse(input);
     await shell.openExternal(brand.links[link]);
   });

@@ -11,6 +11,7 @@ import { pathToFileURL } from 'node:url';
 import type { RecorderCommand, Settings, Status } from '../shared/contracts';
 import type { Target } from './native';
 import { AppError } from '../shared/errors';
+import { overlayBounds } from '../shared/overlay';
 
 export class Windows {
   dashboard?: BrowserWindow;
@@ -22,6 +23,8 @@ export class Windows {
   private recorderReady?: Promise<void>;
   private dashboardReady?: Promise<void>;
   private overlayReady?: Promise<void>;
+  private overlayRequest = 0;
+  private overlayTarget?: Target;
   private acknowledgments = new Map<
     string,
     { kind: string; resolve: () => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
@@ -49,6 +52,11 @@ export class Windows {
         permission === 'media' &&
         details.mediaType === 'audio',
     );
+    const reposition = () => {
+      if (this.overlay?.isVisible()) this.positionOverlay();
+    };
+    screen.on('display-metrics-changed', reposition);
+    screen.on('display-removed', reposition);
   }
   private url(page: string): string {
     if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
@@ -111,6 +119,8 @@ export class Windows {
   }
   async showOverlay(target?: Target): Promise<void> {
     if (!this.settings().showOverlay) return;
+    const request = ++this.overlayRequest;
+    this.overlayTarget = target;
     if (!this.overlay || this.overlay.isDestroyed()) {
       const window = new BrowserWindow({
         width: 300,
@@ -131,6 +141,13 @@ export class Windows {
       this.overlayReady = window.loadURL(this.url('index.html') + '#overlay');
     }
     await this.overlayReady;
+    if (request !== this.overlayRequest || this.quitting || !this.settings().showOverlay) return;
+    this.positionOverlay();
+    this.overlay.showInactive();
+  }
+  private positionOverlay(): void {
+    if (!this.overlay || this.overlay.isDestroyed()) return;
+    const target = this.overlayTarget;
     const point = target
       ? screen.screenToDipPoint({
           x: target.x + Math.max(0, target.width / 2),
@@ -138,21 +155,10 @@ export class Windows {
         })
       : screen.getCursorScreenPoint();
     const area = screen.getDisplayNearestPoint(point).workArea;
-    const width = Math.min(300, area.width);
-    const height = Math.min(90, area.height);
-    this.overlay.setBounds({
-      x: Math.round(area.x + (area.width - width) / 2),
-      y: Math.round(
-        this.settings().overlayPosition === 'top'
-          ? area.y + 20
-          : area.y + area.height - height - 20,
-      ),
-      width,
-      height,
-    });
-    this.overlay.showInactive();
+    this.overlay.setBounds(overlayBounds(area, this.settings()));
   }
   hideOverlay(): void {
+    ++this.overlayRequest;
     this.overlay?.hide();
   }
   broadcast(status: Status): void {
@@ -189,6 +195,17 @@ export class Windows {
       window.webContents.on('render-process-gone', () => {
         if (this.recorder !== window) return;
         this.recordingAllowed = false;
+        this.recorder = undefined;
+        this.recorderReady = undefined;
+        const id = this.recordingId;
+        this.recordingId = undefined;
+        if (id)
+          this.recorderEvent({
+            id,
+            kind: 'error',
+            error: 'The recorder stopped unexpectedly. Microphone is off.',
+          });
+        if (!window.isDestroyed()) window.destroy();
         this.onCrash();
       });
       this.recorderReady = window.loadURL(this.url('recorder.html'));

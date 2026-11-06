@@ -47,9 +47,11 @@ export const settingsSchema = z
     showOverlay: z.boolean().default(true),
     captions: z.boolean().default(false),
     overlayPosition: z.enum(['bottom', 'top']).default('bottom'),
+    overlaySize: z.enum(['compact', 'standard', 'large']).default('standard'),
     waveform: z.enum(['bars', 'dots']).default('bars'),
     accent: z.enum(['blue', 'violet', 'teal']).default('blue'),
     soundCues: z.boolean().default(false),
+    codingVocabulary: z.boolean().default(false),
     historyEnabled: z.boolean().default(false),
     historyDays: z.number().int().min(1).max(90).default(7),
     historyLimit: z.number().int().min(10).max(500).default(100),
@@ -96,6 +98,7 @@ export interface Status {
   startup: boolean;
   startupAvailable: boolean;
   version: string;
+  buildHash: string;
   settings: Settings;
 }
 export interface HistoryEntry {
@@ -125,6 +128,7 @@ export interface Bridge {
       | 'quit'
       | 'micTest'
       | 'micStop'
+      | 'testSound'
       | 'diagnostics'
       | 'pasteTest',
   ): Promise<ActionResult>;

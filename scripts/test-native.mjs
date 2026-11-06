@@ -143,6 +143,17 @@ try {
   const readOnly = await call('capture', { ownPid: process.pid });
   assert.equal(readOnly.ok, false);
   results.push('PASS: read-only field rejected before input.');
+  host.send('button');
+  assert.equal(await host.next(), 'button-focused');
+  let nonText;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    nonText = await call('capture', { ownPid: process.pid });
+    if (nonText.error === 'choose-text-field') break;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(nonText.ok, false);
+  assert.equal(nonText.error, 'choose-text-field');
+  results.push('PASS: buttons and other non-text controls are rejected before input.');
   await writeFile('artifacts/native/results.txt', results.join('\n') + '\n');
   console.log(results.join('\n'));
 } finally {

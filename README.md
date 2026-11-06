@@ -19,6 +19,7 @@ Install for your Windows account, launch Seyvo, and follow the setup steps below
 - Original-field verification, Unicode-safe clipboard insertion with conditional restoration, direct single-line Unicode option and recoverable output when uncertain.
 - Encrypted API key storage, local dictionary import/export, encrypted opt-in history and no audio files.
 - Sandboxed Electron UI, bounded streaming, cancellation and privacy-conscious diagnostics.
+- Optional sound cues, coding vocabulary, three bubble sizes and dictionary editing in the 0.1.2 source revision. Release-specific acceptance is tracked below.
 
 Seyvo has no subscription, account, telemetry backend or proprietary transcription proxy. **Google API charges, quotas, account geography and [data terms](https://ai.google.dev/gemini-api/terms) apply.** Audio goes to Google during dictation. This is not offline transcription. See [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [privacy](PRIVACY.md).
 
@@ -45,6 +46,8 @@ npm run dist:win
 
 Closing the window keeps the tray app running by default; choose **Quit Seyvo** to exit. History is off until enabled. Manual updates use the real GitHub Releases page; no updates are installed automatically.
 
+![Nonactivating microphone bubble captured from the running app](docs/assets/overlay.png)
+
 ## Compatibility and limitations
 
 Initial development targets Windows 11 x64; the full [Windows matrix](tests/manual-windows-qa.md) records what was actually tested. Windows 10 support requires runtime and installation validation. ARM64 and push-to-talk are not shipped. No guarantee for administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Insertion cannot universally be acknowledged by other apps, so Seyvo keeps the transcript for recovery.
@@ -58,3 +61,5 @@ Clipboard paste can expose temporary text to Windows clipboard history or other 
 See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [third-party notices](THIRD_PARTY_NOTICES.md) and [release checklist](docs/release-checklist.md). Repository screenshots are captured from the actual Windows application.
 
 The [commercial launch notes](docs/commercial-readiness.md) separate MIT reuse rights from support, signing, provider terms and trademark decisions.
+
+The [requirement evidence ledger](docs/requirements-evidence.md) maps the supplied specification to code, tests, observations and remaining acceptance.

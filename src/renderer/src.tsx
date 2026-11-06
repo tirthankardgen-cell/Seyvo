@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { ActionResult, HistoryEntry, SettingsPatch, Status } from '../shared/contracts';
 import { brand } from '../shared/brand';
+import { codingVocabulary } from '../shared/vocabulary';
 import './styles.css';
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -68,6 +69,7 @@ function App() {
   const [visibleKey, setVisibleKey] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [word, setWord] = useState('');
+  const [editingWord, setEditingWord] = useState<string>();
   const [search, setSearch] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [shortcut, setShortcut] = useState('');
@@ -151,14 +153,16 @@ function App() {
   const time = `${Math.floor(status.elapsed / 60)}:${String(status.elapsed % 60).padStart(2, '0')}`;
   if (overlay)
     return (
-      <div className={`bubble ${status.phase}`} role="status">
-        <Mark small />
-        <Wave level={status.level} reduced={s.reducedMotion} dots={s.waveform === 'dots'} />
-        <div>
-          <strong>{active ? title : status.recovery ? 'Check your text' : 'Mic off'}</strong>
-          <small>{status.microphoneActive ? time : 'Seyvo'}</small>
+      <div className={`overlay-frame ${s.overlaySize}`}>
+        <div className={`bubble ${status.phase}`} role="status">
+          <Mark small />
+          <Wave level={status.level} reduced={s.reducedMotion} dots={s.waveform === 'dots'} />
+          <div>
+            <strong>{active ? title : status.recovery ? 'Check your text' : 'Mic off'}</strong>
+            <small>{status.microphoneActive ? time : 'Seyvo'}</small>
+          </div>
+          {s.captions && status.interim && <p className="caption">{status.interim}</p>}
         </div>
-        {s.captions && status.interim && <p className="caption">{status.interim}</p>}
       </div>
     );
   const toggle = (
@@ -175,6 +179,7 @@ function App() {
       </span>
       <input
         className="toggle"
+        aria-label={label}
         type="checkbox"
         checked={checked}
         disabled={disabled || busy}
@@ -696,6 +701,19 @@ function App() {
                   s.trimWhitespace,
                   (value) => void patch({ trimWhitespace: value }),
                 )}
+                {toggle(
+                  'Sound cues',
+                  'Short start, stop and error tones. Uses Windows output volume and mute.',
+                  s.soundCues,
+                  (value) => void patch({ soundCues: value }),
+                  active,
+                )}
+                <button
+                  disabled={!s.soundCues || busy || active}
+                  onClick={() => void run(window.seyvo.action('testSound'))}
+                >
+                  Preview sound cue
+                </button>
               </section>
               <section>
                 <h2>General</h2>
@@ -772,6 +790,16 @@ function App() {
                     ['top', 'Top of active monitor'],
                   ],
                   (value) => void patch({ overlayPosition: value as 'bottom' | 'top' }),
+                )}
+                {select(
+                  'Bubble size',
+                  s.overlaySize,
+                  [
+                    ['compact', 'Compact'],
+                    ['standard', 'Standard'],
+                    ['large', 'Large'],
+                  ],
+                  (value) => void patch({ overlaySize: value as 'compact' | 'standard' | 'large' }),
                 )}
                 {select(
                   'Waveform',
@@ -883,16 +911,41 @@ function App() {
               </h1>
               <p className="lead">Names, acronyms, and the things you say your way.</p>
               <section>
+                {toggle(
+                  'Coding vocabulary',
+                  `${codingVocabulary.length} optional technical terms, sent to Google with dictation. No app contents are read.`,
+                  s.codingVocabulary,
+                  (value) => void patch({ codingVocabulary: value }),
+                  active,
+                )}
+                <details>
+                  <summary>View coding terms</summary>
+                  <p>
+                    {codingVocabulary.join(', ')}. Your own dictionary takes priority at the
+                    1,000-term limit.
+                  </p>
+                </details>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (word.trim()) {
-                      void patch({ dictionary: [...new Set([...s.dictionary, word.trim()])] });
-                      setWord('');
+                      const dictionary = editingWord
+                        ? s.dictionary.map((term) => (term === editingWord ? word.trim() : term))
+                        : [...s.dictionary, word.trim()];
+                      void run(
+                        window.seyvo.updateSettings({ dictionary: [...new Set(dictionary)] }),
+                      ).then((saved) => {
+                        if (saved) {
+                          setWord('');
+                          setEditingWord(undefined);
+                        }
+                      });
                     }
                   }}
                 >
-                  <label htmlFor="word">Add a word or phrase</label>
+                  <label htmlFor="word">
+                    {editingWord ? 'Edit word or phrase' : 'Add a word or phrase'}
+                  </label>
                   <div className="input-line">
                     <input
                       id="word"
@@ -903,10 +956,26 @@ function App() {
                     />
                     <button
                       className="primary"
-                      disabled={busy || active || !word.trim() || s.dictionary.length >= 1000}
+                      disabled={
+                        busy ||
+                        active ||
+                        !word.trim() ||
+                        (!editingWord && s.dictionary.length >= 1000)
+                      }
                     >
-                      Add word
+                      {editingWord ? 'Save word' : 'Add word'}
                     </button>
+                    {editingWord && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWord('');
+                          setEditingWord(undefined);
+                        }}
+                      >
+                        Cancel edit
+                      </button>
+                    )}
                   </div>
                 </form>
                 <p className="hint">
@@ -916,7 +985,18 @@ function App() {
                 <div className="word-list">
                   {s.dictionary.map((term) => (
                     <span key={term}>
-                      {term}
+                      <button
+                        className="word-edit"
+                        aria-label={`Edit ${term}`}
+                        disabled={busy || active}
+                        onClick={() => {
+                          setEditingWord(term);
+                          setWord(term);
+                          document.getElementById('word')?.focus();
+                        }}
+                      >
+                        {term}
+                      </button>
                       <button
                         aria-label={`Remove ${term}`}
                         disabled={busy || active}
@@ -1059,6 +1139,10 @@ function App() {
                 <dl>
                   <dt>Version</dt>
                   <dd>{status.version} · development release</dd>
+                  <dt>Build</dt>
+                  <dd data-testid="build-hash">{status.buildHash}</dd>
+                  <dt>Maintainer</dt>
+                  <dd>{brand.maintainer}</dd>
                   <dt>License</dt>
                   <dd>MIT · commercial use permitted</dd>
                   <dt>Updates</dt>
@@ -1070,6 +1154,9 @@ function App() {
                   {link('Source & license', 'source')}
                   {link('Check releases', 'releases')}
                   {link('Google pricing', 'pricing')}
+                  {link('Google terms', 'terms')}
+                  {link('Seyvo privacy policy', 'appPrivacy')}
+                  {link('Contributors', 'contributors')}
                 </div>
                 <p className="hint">
                   Seyvo is not affiliated with Google or Wispr Flow. Working brand pending trademark

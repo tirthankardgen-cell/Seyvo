@@ -1,8 +1,24 @@
 import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+
+function buildHash(): string {
+  try {
+    const hash = execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim();
+    const dirty = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
+    return `${hash}${dirty ? '-modified' : ''}`;
+  } catch {
+    return 'unavailable';
+  }
+}
 export default defineConfig({
-  main: { build: { externalizeDeps: true } },
+  main: {
+    define: { __SEYVO_BUILD__: JSON.stringify(buildHash()) },
+    build: { externalizeDeps: true },
+  },
   preload: {
     build: {
       rollupOptions: {

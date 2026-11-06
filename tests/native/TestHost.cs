@@ -51,6 +51,7 @@ class TestHost {
     Console.OutputEncoding=new UTF8Encoding(false); Console.InputEncoding=Encoding.UTF8;
     Form form=new Form { Text="Seyvo isolated insertion test", Width=600, Height=300, TopMost=true };
     TextBox box=new TextBox { Multiline=true, Dock=DockStyle.Fill, AccessibleName="Seyvo synthetic insertion target" }; form.Controls.Add(box);
+    Button button=new Button { Text="Not a text field", Dock=DockStyle.Bottom }; form.Controls.Add(button);
     bool clipboardSaved=false, raceOnPaste=false;
     Func<bool> restoreClipboard=()=> {
       if(!clipboardSaved) return true;
@@ -103,6 +104,7 @@ class TestHost {
             Console.WriteLine(SendInput(2,new INPUT[] { down,up },Marshal.SizeOf(typeof(INPUT)))==2 ? "shortcut-sent" : "input-blocked");
           }
           else if(command=="readonly") { box.ReadOnly=true; Console.WriteLine("readonly"); }
+          else if(command=="button") { box.ReadOnly=false; button.BringToFront(); form.ActiveControl=button; button.Focus(); Console.WriteLine(button.Focused ? "button-focused" : "button-focus-blocked-"+button.CanFocus+"-"+button.Visible+"-"+button.Enabled); }
           else if(command=="quit") form.Close();
         }));
       }

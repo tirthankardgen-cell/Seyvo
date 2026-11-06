@@ -19,6 +19,8 @@ Requirements: Windows x64 supported by the packaged Electron runtime, microphone
 
 Smart mode uses Google's native cleanup only; no second paid rewrite call. No automatic translation, summarization or chat response. Multilingual quality depends on Google and your audio; Hindi/Hinglish recognition needs empirical acceptance testing. No offline transcription. No fixed API price or unlimited free usage promise.
 
-Not shipped: push-to-talk, ARM64, automatic updates, snippets, coding vocabulary packs, near-caret/custom-position overlay, automatic update channels or remote synchronization. Overlay placement is top/bottom of the target monitor. Direct Unicode rejects newlines to avoid submission. Sound-cue implementation is not currently exposed. The product remains a development build until the release matrix passes.
+Sound cues are off by default. Enable them and use Preview sound cue to check the Windows output device/mixer. Coding vocabulary is opt-in in Dictionary; the complete term list is visible, user terms take priority and the combined provider vocabulary stays within 1,000 entries. Bubble size is compact, standard or large. Captions remain off by default.
+
+Not shipped: push-to-talk, ARM64, automatic updates, snippets, near-caret/custom-position overlay, automatic update channels or remote synchronization. Overlay placement is top/bottom of the target monitor. Direct Unicode rejects newlines to avoid submission. The product remains a validation build until the release matrix passes. See `requirements-evidence.md` for the full specification audit and explicit deviations.
 
 Data: `%APPDATA%\seyvo`; uninstall preserves it. Follow `PRIVACY.md` for deliberate removal. Report only app version, Windows build, target executable and coarse diagnostics; never submit private keys or speech.

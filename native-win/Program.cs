@@ -67,9 +67,15 @@ internal static class Program {
     AutomationElement element = AutomationElement.FocusedElement;
     if (element == null || element.Current.ProcessId != pid || element.Current.IsPassword || !element.Current.IsEnabled)
       throw new InvalidOperationException("unsafe-field");
+    if (element.Current.ControlType != ControlType.Edit && element.Current.ControlType != ControlType.Document)
+      throw new InvalidOperationException("choose-text-field");
     object pattern;
-    if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern) && ((ValuePattern)pattern).Current.IsReadOnly)
-      throw new InvalidOperationException("read-only-field");
+    if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern)) {
+      if (((ValuePattern)pattern).Current.IsReadOnly) throw new InvalidOperationException("read-only-field");
+    } else if (element.TryGetCurrentPattern(TextPattern.Pattern, out pattern)) {
+      object readOnly = ((TextPattern)pattern).DocumentRange.GetAttributeValue(TextPattern.IsReadOnlyAttribute);
+      if (!(readOnly is bool) || (bool)readOnly) throw new InvalidOperationException("read-only-field");
+    } else throw new InvalidOperationException("choose-text-field");
     if (element.TryGetCurrentPattern(TextPattern.Pattern,out pattern)) {
       object readOnly=((TextPattern)pattern).DocumentRange.GetAttributeValue(TextPattern.IsReadOnlyAttribute);
       if(readOnly is bool && (bool)readOnly) throw new InvalidOperationException("read-only-field");
@@ -102,11 +108,14 @@ internal static class Program {
   static object Capture(int ownPid, bool allowPractice) {
     IntPtr window = GetForegroundWindow(); uint pid; uint thread = GetWindowThreadProcessId(window, out pid);
     if (window == IntPtr.Zero || pid == ownPid && !allowPractice) throw new InvalidOperationException("choose-target");
-    Process process = Process.GetProcessById((int)pid);
+    long started; string appName;
+    using (Process process = Process.GetProcessById((int)pid)) {
+      started=process.StartTime.ToFileTimeUtc(); appName=process.ProcessName + ".exe";
+    }
     GUIINFO gui = Gui(thread); SafeNativeControl(gui.Focus); AutomationElement element = SafeElement(pid);
     if (pid == ownPid && (element.Current.Name != "Dictation practice" || element.Current.ControlType != ControlType.Edit)) throw new InvalidOperationException("choose-practice-field");
     Target target = new Target { Window=window, Focus=gui.Focus, Pid=pid, Thread=thread,
-      Started=process.StartTime.ToFileTimeUtc(), App=process.ProcessName + ".exe", Runtime=Identity(element),
+      Started=started, App=appName, Runtime=Identity(element),
       Caret=gui.CaretRect, Selection=Selection(element) };
     RECT bounds; if (!GetWindowRect(window, out bounds)) throw new InvalidOperationException("target-unavailable");
     ClearTargets();
@@ -122,7 +131,7 @@ internal static class Program {
     uint pid;
     if (!IsWindow(target.Window) || GetForegroundWindow() != target.Window ||
       GetWindowThreadProcessId(target.Window, out pid) != target.Thread || pid != target.Pid ||
-      Process.GetProcessById((int)pid).StartTime.ToFileTimeUtc() != target.Started)
+      ProcessStarted(pid) != target.Started)
       throw new InvalidOperationException("target-changed");
     GUIINFO gui = Gui(target.Thread);
     SafeNativeControl(gui.Focus);
@@ -137,6 +146,9 @@ internal static class Program {
         current.CompareEndpoints(TextPatternRangeEndpoint.End, target.Selection, TextPatternRangeEndpoint.End) != 0)
         throw new InvalidOperationException("caret-changed");
     }
+  }
+  static long ProcessStarted(uint pid) {
+    using(Process process=Process.GetProcessById((int)pid)) return process.StartTime.ToFileTimeUtc();
   }
   static bool ModifiersDown() {
     foreach(int key in new int[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }) if (GetAsyncKeyState(key) < 0) return true;
@@ -236,6 +248,7 @@ internal static class Program {
           var request=Json.Deserialize<Dictionary<string,object>>(line); id=Convert.ToInt32(request["id"]);
           string command=Convert.ToString(request["command"]); object result;
           if (command=="ping") result=new { version=1, architecture="x64" };
+          else if (command=="cue") { CuePlayer.Play(Convert.ToString(request["cue"])); result=new { played=true }; }
           else if (command=="capture") result=Capture(Convert.ToInt32(request["ownPid"]),request.ContainsKey("allowPractice") && Convert.ToBoolean(request["allowPractice"]));
           else if (command=="insert") result=Insert(Convert.ToString(request["token"]),Convert.ToString(request["text"]),Convert.ToString(request["method"]));
           else if (command=="clear") { ClearTargets(); result=new { cleared=true }; }
@@ -248,6 +261,7 @@ internal static class Program {
         }
       }
       ClearTargets();
+      CuePlayer.Close();
     }
   }
 }

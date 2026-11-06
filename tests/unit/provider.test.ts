@@ -38,6 +38,32 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Google wire adapter', () => {
+  it('sends the coding preset only after opt-in, alongside user vocabulary', async () => {
+    for (const enabled of [false, true]) {
+      const socket = new Socket();
+      const provider = new GeminiLive(() => socket as unknown as WebSocket);
+      const ready = provider.connect(
+        'test-not-real',
+        settingsSchema.parse({
+          codingVocabulary: enabled,
+          dictionary: ['MyProduct'],
+        }),
+        new AbortController().signal,
+        () => {},
+        () => {},
+      );
+      socket.emit('open');
+      socket.message({ setupComplete: {} });
+      await ready;
+      const setup = socket.sent[0] as {
+        setup: { inputAudioTranscription: { customVocabulary: string[] } };
+      };
+      const terms = setup.setup.inputAudioTranscription.customVocabulary;
+      expect(terms).toContain('MyProduct');
+      expect(terms.includes('TypeScript')).toBe(enabled);
+      provider.close();
+    }
+  });
   it('accepts the live transcription generationComplete signal without optional finished or turnComplete fields', async () => {
     vi.useFakeTimers();
     const f = fixture();

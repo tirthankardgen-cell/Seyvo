@@ -43,6 +43,16 @@ For opt-in live acceptance, install into .tools/installed, save a user-owned key
 
 An early extended clipboard fixture attempted to retain an OLE data object and could not restore it after replacing the clipboard. That fixture was removed. The current test uses only an empty clipboard, creates known synthetic content, and conditionally removes only its own content. The supplied screenshot was copied back to the workstation clipboard and verified at 1512 × 1071. This incident is not reported as successful clipboard preservation.
 
+## 0.1.2 source validation
+
+33 unit/integration tests passed, including opt-in vocabulary/provider limits, cue defaults/order, migration defaults and negative/tiny monitor geometry. Six Electron scenarios cover the original UI/security/physical-microphone test plus four emulated scale factors and crash/suspend/lock/close-to-tray/second-instance behavior. Settings survive complete process restarts; caption bounds and non-focusability are asserted. A recorder crash exposed a retained hidden window, which is now destroyed and covered by regression testing. A test-launcher error in the second-instance fixture was corrected to launch the actual Electron executable.
+
+Native Unicode, one-shot refusal, read-only refusal and non-editable-button refusal passed with the tightened guard. Clipboard mutation fixtures reported SKIP because the current clipboard was occupied; it was preserved. An isolated Edge textarea received a synthetic Hindi/emoji Unicode string. A Notepad attempt was interrupted by a Windows security prompt and did not match the fixture; it is not an accepted target yet. No firewall permissions were changed.
+
+100%, 125%, 150% and 200% scaling here are Chromium/Electron emulation on the current workstation, combined with 200% page zoom. Native surface screenshots were inspected. This does not certify physical monitor/DPI switching or screen-reader behavior. Sound preview reached the Windows playback API; physical audibility/mute acceptance remains distinct.
+
+The specification-to-evidence mapping and remaining gaps are maintained in `docs/requirements-evidence.md`.
+
 ## Release gate
 
 Source and an explicitly labelled unsigned validation prerelease may be shared. Do not promote a stable commercial release until live human speech, relevant target applications, clean-machine installation and the chosen support matrix are accepted, and the owner addresses signing and brand clearance.

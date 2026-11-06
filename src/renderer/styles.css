@@ -647,12 +647,18 @@ footer button {
   background: transparent;
   overflow: hidden;
 }
+.overlay-frame {
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 5px 7px 21px;
+}
 .bubble {
-  margin: 5px auto;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 16px;
-  width: 286px;
+  width: 100%;
   height: 64px;
   border-radius: 19px;
   border: 1px solid #53617688;
@@ -678,15 +684,49 @@ footer button {
 }
 .bubble .caption {
   position: absolute;
-  bottom: 64px;
+  bottom: calc(100% + 8px);
   left: 0;
   right: 0;
   max-height: 110px;
+  margin: 0;
+  overflow-wrap: anywhere;
   overflow: hidden;
   background: #1b202b;
   padding: 10px;
   border-radius: 12px;
   font-size: 12px;
+}
+.compact .bubble {
+  height: 56px;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.compact .bubble .wave {
+  min-width: 66px;
+}
+.large .bubble {
+  height: 80px;
+  gap: 20px;
+}
+.large .bubble strong {
+  font-size: 13px;
+}
+.large .bubble small {
+  font-size: 12px;
+}
+.word-list .word-edit {
+  color: var(--text);
+  width: auto;
+  padding: 0;
+}
+summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .bubble.error {
   border-color: #b77777;
@@ -786,6 +826,83 @@ footer button {
     display: none;
   }
 }
+@media (max-width: 600px) {
+  .app-shell {
+    display: block;
+  }
+  .app-shell aside {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+  }
+  .app-shell .brand,
+  .sidebar-bottom {
+    display: none;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0;
+  }
+  nav button {
+    font-size: 11px;
+    gap: 5px;
+    padding: 9px 7px;
+  }
+  nav button.selected:before,
+  nav small {
+    display: none;
+  }
+  nav button > span {
+    width: 15px;
+    font-size: 15px;
+  }
+  .workspace {
+    margin-left: 0;
+  }
+  main {
+    padding: 20px 14px;
+  }
+  header {
+    height: 44px;
+    padding: 0 14px;
+  }
+  section {
+    padding: 16px;
+  }
+  .setting-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .setting-row:has(.toggle) {
+    flex-direction: row;
+    align-items: center;
+  }
+  .setting-row select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .steps {
+    flex-wrap: wrap;
+  }
+  dl {
+    grid-template-columns: 90px minmax(0, 1fr);
+    gap: 12px;
+  }
+  dd {
+    overflow-wrap: anywhere;
+  }
+  .onboard-footer,
+  footer,
+  .mic-test {
+    flex-wrap: wrap;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *:before {
@@ -795,6 +912,15 @@ footer button {
   .wave i {
     height: 8px !important;
   }
+}
+.bubble .brand-mark.small {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.compact .bubble .brand-mark.small {
+  width: 28px;
+  height: 28px;
 }
 [data-reduced='true'] *,
 [data-reduced='true'] *:before {

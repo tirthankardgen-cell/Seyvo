@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — validation
+
+Complete sound cues with Windows playback and preview, an opt-in coding vocabulary preset, three bubble sizes, dictionary editing, and About build/maintainer/privacy/contributor details. Fix clipped captions and add compact layouts for 200% zoom. Reposition the overlay on display changes and invalidate delayed shows after hiding.
+
+Destroy the hidden recorder window and settle pending operations after a renderer crash. Require editable native text controls before capturing an insertion target and dispose process identity handles. Add provider vocabulary limits, cue ordering/defaults, scale/zoom, settings restart, crash/suspend/lock and second-instance tests. The requirement evidence ledger records remaining physical and commercial acceptance gates.
+
 ## 0.1.1 — validation
 
 Allow up to 15 seconds for the first native-helper handshake on cold Windows installations; capture and insertion remain bounded at five seconds. CI installs Electron before measuring application startup. This follows an intermittent native-helper availability failure on a hosted runner; it does not relax the native availability assertion.
