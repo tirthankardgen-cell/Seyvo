@@ -4,9 +4,9 @@
 
 A Windows voice-dictation utility with your own Google Gemini API key. Use a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
 
-**0.1.0 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture. Physical microphone access also passes; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
+**0.1.1 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture. Physical microphone access also passes; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.0/Seyvo-0.1.0-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.0/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.0)
+[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.1/Seyvo-0.1.1-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.1/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.1)
 
 Install for your Windows account, launch Seyvo, and follow the setup steps below. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
