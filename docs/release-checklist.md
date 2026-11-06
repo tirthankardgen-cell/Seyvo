@@ -13,3 +13,5 @@ Development builds are distinct from production readiness. Do not publish a stab
 9. Download the actual hosted installer, verify checksum/signature, install in a fresh profile/VM and check artifact links. Add the verified download URL to README only once it exists.
 
 Current expected output: `dist/Seyvo-0.1.0-windows-x64-setup.exe`; existence and checksum must be verified after a successful packaging run. Manual updates open the fixed repository releases page; there is no background automatic installer. Reproducible means documented locked inputs and repeatable process, not an unproven bit-for-bit deterministic signed binary claim.
+
+The initial [0.1.0 validation prerelease](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.0) contains the unsigned x64 installer, SHA256SUMS.txt, CycloneDX SBOM and license inventory. The QA record identifies passed gates and pending human/compatibility/commercial-launch decisions. Publication as a prerelease does not waive those stable-release gates.

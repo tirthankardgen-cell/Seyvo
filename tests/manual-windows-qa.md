@@ -5,6 +5,8 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 | Check | Observed result |
 | --- | --- |
 | Typecheck / lint / production build | Passed the final implementation gate. |
+| GitHub Windows CI | Passed on the published implementation commit: [run 42299582189](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42299582189). Includes clean dependency installation, checks, Electron E2E, audit and secret scan. |
+| Development launch | The Vite loopback renderer and native helper loaded successfully with microphone off. |
 | Core unit/integration tests | 27 passed: PCM, validation, shortcuts, assembly, provider boundaries, cancellation, storage and redirected-profile recovery. Network/native services are mocked at this tier. |
 | Electron E2E | Passed. Real app UI, persistence, renderer isolation, malformed/unauthorized IPC, Windows encryption, compiled WebSocket/vault loopback test and physical microphone open/stop. Google is mocked only for the loopback test. |
 | Live Google key/model access | Passed from the installed app, using a user-owned key kept in the encrypted Windows profile. Exact model: gemini-3.5-transcribe-live. |
