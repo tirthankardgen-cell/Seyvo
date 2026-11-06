@@ -31,7 +31,7 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 
 Evidence files are generated locally under ignored artifacts/: native/results.txt, packaged/results.json, live/recorded-speech.json, live/microphone.json, screenshots, performance, SBOM and licenses. They contain coarse results, not credentials or private transcripts. Release checksums identify the final uploaded installer.
 
-Current 0.1.2 installer SHA256: `c5a42c45f7d6dc8e7f82ac457e3c23e9685115bb57bbeb82fdfbb082c876384e`. File: `Seyvo-0.1.2-windows-x64-setup.exe`; build `a98442b9f1af`. Archived 0.1.1 hash: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`; archived 0.1.0 hash: `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
+Current 0.1.3 installer SHA256: `ec235a8652540b7676851a3980c42af9c418497129f5152400cbe44ba79d0702`. File: `Seyvo-0.1.3-windows-x64-setup.exe`; build `4a9d663bee58`. Archived 0.1.2 hash: `c5a42c45f7d6dc8e7f82ac457e3c23e9685115bb57bbeb82fdfbb082c876384e`; archived 0.1.1 hash: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`; archived 0.1.0 hash: `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
 
 ## Reproduce
 
@@ -74,6 +74,16 @@ Build `a9280db39247` passed [Windows CI 42309748565](https://github.com/tirthank
 An additional test used the installed native helper against the uniquely identified `Seyvo-acceptance-synthetic.txt` Notepad tab. Direct Unicode input did not exactly append the known fixture (22 UTF-16 units received for a 32-unit fixture in the repeat). No other document or clipboard was used, and no Enter was sent. This is a failed compatibility observation, not a Notepad acceptance pass. Clipboard mode there remains untested.
 
 The subsequent fix refuses direct Unicode for Notepad before sending keys. A real Windows test of the compiled helper confirmed the specific refusal and exact unchanged field contents. A broader IME check was investigated and rejected because Windows also reported stock keyboard layouts as IMEs on this host; no general IME rule or input-language change is shipped. Native Windows Forms Unicode/Hindi/emoji and existing safety tests still pass.
+
+## 0.1.3 final installer acceptance
+
+Final build `4a9d663bee58` passed [GitHub Windows CI 42311811558](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42311811558): checks, 41 unit/integration tests, eight Electron scenarios, dependency audit, secret scan and supply-chain reports. The installer is 124,706,087 bytes; its SHA256 is recorded above and Authenticode reports NotSigned.
+
+The exact installed build passed microphone discovery and selecting/opening/stopping an actual input, startup readback, fuses, renderer isolation and development-URL rejection. The saved key tested successfully against real Google. Generated speech through the production worklet and provider inserted exactly 55 finalized characters into the original native field using physical F8 start/stop events. Microphone stop and clean process exit were verified. This remains generated file-backed speech, not live human speech.
+
+Upgrade and uninstall/reinstall passed with settings and encrypted key presence retained, startup registration removed, native helper available and clean exit. The installed Notepad direct-input guard refused the request and left the owned test field exactly unchanged; no clipboard mutation or Enter event was used. Native clipboard fixtures were skipped because the desktop clipboard was occupied. Source, Git history and bundled application credential-pattern scans passed. Human/clean-machine/broader-target and commercial gates remain open.
+
+The public [v0.1.3 release](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.3) was published as an unsigned prerelease with installer, checksums, SBOM and license inventory. Its tag resolves to `4a9d663bee589df0050aa1014387f776b2c44e04`. The complete hosted installer was downloaded again (124,706,087 bytes); SHA256 matched `ec235a8652540b7676851a3980c42af9c418497129f5152400cbe44ba79d0702`. Repository documentation links were checked; no missing local link target was found.
 
 ## Release gate
 

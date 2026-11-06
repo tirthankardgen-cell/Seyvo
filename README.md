@@ -4,9 +4,9 @@
 
 A Windows voice-dictation utility with your own Google Gemini API key. Use a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
 
-**0.1.2 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture, 33 unit/integration tests, six Electron scenarios and GitHub Windows CI. Physical microphone access also passes; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
+**0.1.3 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture, 41 unit/integration tests, eight Electron scenarios and GitHub Windows CI. Physical microphone discovery/selection/open/stop and clean installed exit also pass; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.2/Seyvo-0.1.2-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.2/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.2)
+[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.3/Seyvo-0.1.3-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.3/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.3)
 
 Install for your Windows account, launch Seyvo, and follow the setup steps below. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
@@ -40,7 +40,7 @@ npm run dist:win
 ## Use
 
 1. Launch Seyvo. Get your own key from [Google AI Studio](https://aistudio.google.com/apikey), then **Save & test**. This verifies access to the exact transcription model without opening your microphone.
-2. Choose a microphone and run its local level test. Configure a safe shortcut; default is **Ctrl + Shift + Space**.
+2. With Windows default selected, run **Test microphone** to discover inputs. Stop the test, choose your preferred microphone and test it locally. Configure a safe shortcut; default is **Ctrl + Shift + Space**.
 3. Put the caret in a supported field in another application. Press the shortcut, speak, and press it again to finish. Escape cancels.
 4. Check the target. If input was blocked or cannot be confirmed, open Seyvo from the tray to copy or retry. Check for existing text before retrying. Seyvo never sends Enter.
 
@@ -51,6 +51,8 @@ Closing the window keeps the tray app running by default; choose **Quit Seyvo** 
 ## Compatibility and limitations
 
 Initial development targets Windows 11 x64; the full [Windows matrix](tests/manual-windows-qa.md) records what was actually tested. Windows 10 support requires runtime and installation validation. ARM64 and push-to-talk are not shipped. No guarantee for administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Insertion cannot universally be acknowledged by other apps, so Seyvo keeps the transcript for recovery.
+
+Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. The refusal leaves the field unchanged. Clipboard mode there remains a separate acceptance item; inspect any result when choosing paste or Copy.
 
 Clipboard paste can expose temporary text to Windows clipboard history or other apps. Unsupported clipboard formats cause safe refusal. Same-user malware may access secrets protected for that Windows account. See [support](docs/support-and-limitations.md), [security](SECURITY.md), [architecture](docs/architecture.md) and [threat model](docs/privacy-threat-model.md).
 
