@@ -7,7 +7,7 @@ Requirements: Windows x64 supported by the packaged Electron runtime, microphone
 | Key test rejected | Review key restrictions, model/region access and account billing in Google AI Studio. Failed replacement does not overwrite the previous encrypted key. |
 | Quota/billing error | Check Google's limits/pricing; no automatic retries are made. |
 | Mic permission denied | Enable microphone access for desktop apps in Windows Privacy settings, then test locally. |
-| Wrong/disconnected mic | Choose an available input in Settings, then use the local level test. |
+| Wrong/disconnected mic | Select Windows default in Settings, run Test microphone, then stop and select a discovered input. Device names refresh only during an explicit local test or dictation. A saved input may be listed as unverified until that discovery runs. |
 | Shortcut unavailable | Record another Ctrl+Shift/Alt combination or F6–F12. The previous working registration is retained. |
 | Cannot insert | Check original window/field/caret stayed selected. Protected, elevated, password, read-only, terminal, custom or remote editors may reject input. Copy is the fallback. Do not routinely run Seyvo as administrator. |
 | Clipboard cannot be preserved | Current formats may be outside the safe set or larger than 16 MB. Copy deliberately replaces it; direct Unicode mode supports short single-line text. |

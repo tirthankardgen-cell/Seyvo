@@ -67,7 +67,6 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [key, setKey] = useState('');
   const [visibleKey, setVisibleKey] = useState(false);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [word, setWord] = useState('');
   const [editingWord, setEditingWord] = useState<string>();
   const [search, setSearch] = useState('');
@@ -90,17 +89,6 @@ function App() {
     document.documentElement.dataset.reduced = String(status.settings.reducedMotion);
     document.body.classList.toggle('overlay-body', overlay);
   }, [status?.settings.theme, status?.settings.accent, status?.settings.reducedMotion, overlay]);
-  useEffect(() => {
-    const update = () => {
-      void navigator.mediaDevices
-        .enumerateDevices()
-        .then((all) => setDevices(all.filter((d) => d.kind === 'audioinput')))
-        .catch(() => {});
-    };
-    update();
-    navigator.mediaDevices.addEventListener('devicechange', update);
-    return () => navigator.mediaDevices.removeEventListener('devicechange', update);
-  }, [status?.microphoneActive]);
   async function run<T>(action: Promise<ActionResult<T>>): Promise<T | undefined> {
     setBusy(true);
     setError('');
@@ -134,6 +122,7 @@ function App() {
       </main>
     );
   const s = status.settings;
+  const devices = status.microphones;
   const active = ['connecting', 'listening', 'finalizing', 'inserting'].includes(status.phase);
   const title = s.paused
     ? 'Paused'
@@ -147,9 +136,11 @@ function App() {
             ? 'Inserting'
             : status.recovery
               ? 'Your words are ready'
-              : status.hasKey
-                ? 'Ready when you are'
-                : 'A little setup. A lot less typing';
+              : status.phase === 'error'
+                ? 'Needs attention'
+                : status.hasKey
+                  ? 'Ready when you are'
+                  : 'A little setup. A lot less typing';
   const time = `${Math.floor(status.elapsed / 60)}:${String(status.elapsed % 60).padStart(2, '0')}`;
   if (overlay)
     return (
@@ -223,6 +214,10 @@ function App() {
           onChange={(e) => void patch({ deviceId: e.target.value })}
         >
           <option value="default">Windows default</option>
+          {s.deviceId !== 'default' &&
+            !devices.some((device) => device.deviceId === s.deviceId) && (
+              <option value={s.deviceId}>Saved microphone · test to check</option>
+            )}
           {devices
             .filter((d) => d.deviceId !== 'default')
             .map((d, i) => (
@@ -244,8 +239,8 @@ function App() {
         </button>
       </div>
       <p className="hint">
-        A 15-second local level test. Nothing is sent to Google. Device names appear after
-        microphone access is granted.
+        A 15-second local level test. Nothing is sent to Google. Device names refresh during testing
+        or dictation. After connecting a new input, test Windows default, stop, then choose it.
       </p>
     </>
   );
@@ -426,10 +421,16 @@ function App() {
           </span>
         </header>
         <main>
-          {error && (
+          {(error || status.phase === 'error') && (
             <div className="notice error" role="alert">
-              <span>{error}</span>
-              <button aria-label="Dismiss error" onClick={() => setError('')}>
+              <span>{error || status.message}</span>
+              <button
+                aria-label="Dismiss error"
+                onClick={() => {
+                  setError('');
+                  if (status.phase === 'error') void run(window.seyvo.action('dismiss'));
+                }}
+              >
                 ×
               </button>
             </div>

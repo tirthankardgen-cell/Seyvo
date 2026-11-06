@@ -7,7 +7,7 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 | Typecheck / lint / production build | Passed the final implementation gate. |
 | GitHub Windows CI | Initial implementation passed [run 42299582189](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42299582189). The 0.1.1 cold-start patch passed [run 42301070076](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42301070076), including clean dependencies, runtime preparation, checks, E2E, audit and secret scan. |
 | Development launch | The Vite loopback renderer and native helper loaded successfully with microphone off. |
-| Core unit/integration tests | 27 passed: PCM, validation, shortcuts, assembly, provider boundaries, cancellation, storage and redirected-profile recovery. Network/native services are mocked at this tier. |
+| Core unit/integration tests | 41 passed in 0.1.3: PCM, validation, shortcuts, assembly, provider boundaries/vocabulary/failures, cues, cancellation, geometry, storage and redirected-profile recovery. Network/native services are mocked at this tier. |
 | Electron E2E | Passed. Real app UI, persistence, renderer isolation, malformed/unauthorized IPC, Windows encryption, compiled WebSocket/vault loopback test and physical microphone open/stop. Google is mocked only for the loopback test. |
 | Live Google key/model access | Passed from the installed app, using a user-owned key kept in the encrypted Windows profile. Exact model: gemini-3.5-transcribe-live. |
 | Packaged speech → Google → original field | Passed using a generated speech WAV through Chromium capture, the production recorder/worklet, real Google and real Win32 input. Both shortcut activations used Windows input events. Recognized and inserted text matched; microphone stopped. No provider mock or transcript artifact. |
@@ -25,13 +25,13 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 | Hindi / Hinglish cloud recognition | Not yet empirically accepted. Unicode insertion was tested separately. |
 | Multi-monitor / negative origin / 100–200% physical scaling | Only the current 150% desktop was observed. Broader matrix remains untested. |
 | Notepad / browser / VS Code / Word / chat / terminals | The owned native text field is verified. Individual third-party targets remain acceptance work; custom, protected, remote and elevated targets can require Copy. |
-| Browser attempt / foreground refusal | An isolated Edge textarea was opened, but another Windows window retained foreground focus. The test guard refused input. No browser insertion pass is claimed. |
+| Browser / foreground refusal | An initial attempt correctly refused input when another window retained focus. A later isolated Edge textarea received synthetic Hindi/emoji via native Unicode input; see the 0.1.2 record below. |
 | Suspend/resume / unplug during dictation / screen reader | Handling is implemented; full physical acceptance remains unperformed. |
 | Signature / trademark | Installer unsigned; no signing certificate or formal trademark clearance supplied. |
 
 Evidence files are generated locally under ignored artifacts/: native/results.txt, packaged/results.json, live/recorded-speech.json, live/microphone.json, screenshots, performance, SBOM and licenses. They contain coarse results, not credentials or private transcripts. Release checksums identify the final uploaded installer.
 
-Current 0.1.1 installer SHA256: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`. File: `Seyvo-0.1.1-windows-x64-setup.exe`. The archived 0.1.0 installer hash is `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
+Current 0.1.2 installer SHA256: `c5a42c45f7d6dc8e7f82ac457e3c23e9685115bb57bbeb82fdfbb082c876384e`. File: `Seyvo-0.1.2-windows-x64-setup.exe`; build `a98442b9f1af`. Archived 0.1.1 hash: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`; archived 0.1.0 hash: `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
 
 ## Reproduce
 
@@ -52,6 +52,22 @@ Native Unicode, one-shot refusal, read-only refusal and non-editable-button refu
 100%, 125%, 150% and 200% scaling here are Chromium/Electron emulation on the current workstation, combined with 200% page zoom. Native surface screenshots were inspected. This does not certify physical monitor/DPI switching or screen-reader behavior. Sound preview reached the Windows playback API; physical audibility/mute acceptance remains distinct.
 
 The specification-to-evidence mapping and remaining gaps are maintained in `docs/requirements-evidence.md`.
+
+## 0.1.2 installed and CI acceptance
+
+Build `a98442b9f1af` passed [GitHub Windows CI 42306352059](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42306352059), including all 33 unit/integration and six Electron tests, audit and secret scan. An initial CI failure identified a race between a synthetic caption fixture and real level broadcasts; the test now drains the recorder before checking static captions.
+
+The installed 0.1.2 app successfully tested the saved encrypted key against Google and completed generated speech through the production worklet, live Google and original Windows Forms field. All 55 finalized characters matched; F8 start/stop used real Windows events and the microphone stopped. This remains file-backed capture, not human speech. No transcript or credential was saved to the result artifact.
+
+Upgrade, packaged resources, production fuses, development-URL rejection, startup roundtrip, physical microphone open/stop and uninstall/reinstall passed. Startup registration was removed on uninstall; encrypted key presence and settings survived reinstall. Full dependency audit: zero vulnerabilities. Source and bundled application scans found no credential patterns. The installer is unsigned.
+
+## 0.1.3 source validation
+
+Typecheck, lint, production build, 41 unit/integration tests and eight Electron scenarios passed. Added provider setup rejection (401/403/404/429/500/503), missing setup timeout and disconnect-during-finalization coverage with late-event suppression. A compiled loopback provider test verifies a rejected replacement leaves the encrypted key unchanged and the previous key can still be tested.
+
+Physical microphone discovery produced usable device IDs; selecting one opened and stopped that input. The dashboard remains denied direct microphone access. Simulated permission denial shows an actionable error and destroys the hidden recorder; an unavailable synthetic device selection recovers by selecting Windows default. These simulations do not claim physical device unplug or human speech acceptance.
+
+The user deferred the physical spoken test and requested continued automated testing. Human speech remains pending.
 
 ## Release gate
 

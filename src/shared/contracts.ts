@@ -82,12 +82,17 @@ export const settingsPatchSchema = z.object(patchFields).strict() as z.ZodType<
 export type SettingsPatch = z.infer<typeof settingsPatchSchema>;
 export type Phase =
   'idle' | 'connecting' | 'listening' | 'finalizing' | 'inserting' | 'recovery' | 'error';
+export interface Microphone {
+  deviceId: string;
+  label: string;
+}
 export interface Status {
   phase: Phase;
   message: string;
   hasKey: boolean;
   providerVerified: boolean;
   microphoneActive: boolean;
+  microphones: Microphone[];
   level: number;
   elapsed: number;
   interim: string;
@@ -151,7 +156,11 @@ export interface AudioPacket {
 export interface RecorderBridge {
   command(listener: (command: RecorderCommand) => void): () => void;
   packet(packet: AudioPacket): Promise<boolean>;
-  event(event: { id: string; kind: 'started' | 'stopped' | 'error'; error?: string }): void;
+  event(
+    event:
+      | { id: string; kind: 'started' | 'stopped' | 'error'; error?: string }
+      | { id: string; kind: 'devices'; devices: Microphone[] },
+  ): void;
 }
 declare global {
   interface Window {

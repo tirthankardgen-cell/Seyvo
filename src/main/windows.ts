@@ -166,7 +166,7 @@ export class Windows {
       if (window && !window.isDestroyed() && !window.webContents.isLoadingMainFrame())
         window.webContents.send(
           'app:state',
-          window === this.overlay ? { ...status, recovery: '' } : status,
+          window === this.overlay ? { ...status, recovery: '', microphones: [] } : status,
         );
   }
   authorize(
@@ -216,10 +216,12 @@ export class Windows {
     await this.command({ kind: 'start', id, deviceId }, 'started');
   }
   async stopRecord(id: string, cancel: boolean): Promise<void> {
+    if (this.recordingId && this.recordingId !== id) return;
     if (cancel && this.recordingId === id) this.recordingId = undefined;
-    if (!this.recorder || this.recorder.isDestroyed() || !this.recordingAllowed) return;
+    if (!this.recorder || this.recorder.isDestroyed()) return;
     try {
-      await this.command({ kind: cancel ? 'cancel' : 'stop', id }, 'stopped');
+      if (this.recordingAllowed)
+        await this.command({ kind: cancel ? 'cancel' : 'stop', id }, 'stopped');
     } finally {
       this.recordingAllowed = false;
       if (this.recordingId === id) this.recordingId = undefined;
@@ -260,6 +262,9 @@ export class Windows {
       else ack.resolve();
     }
     if (event.kind === 'stopped' || event.kind === 'error') this.recordingAllowed = false;
+  }
+  isRecordingSession(id: string): boolean {
+    return this.recordingAllowed && this.recordingId === id;
   }
   close(): void {
     this.quitting = true;

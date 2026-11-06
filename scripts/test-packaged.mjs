@@ -70,13 +70,44 @@ try {
     .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
     .toMatch(/listening|error/);
   const recording = await page.evaluate(() => window.seyvo.status());
-  if (recording.microphoneActive) await page.evaluate(() => window.seyvo.action('micStop'));
+  let deviceSelection = 'not exercised; microphone unavailable';
+  if (recording.microphoneActive) {
+    await expect
+      .poll(async () =>
+        (await page.evaluate(() => window.seyvo.status())).microphones.some(
+          (device) => device.deviceId !== 'default',
+        ),
+      )
+      .toBe(true);
+    const discovered = (await page.evaluate(() => window.seyvo.status())).microphones;
+    await page.evaluate(() => window.seyvo.action('micStop'));
+    const deviceId = discovered.find((device) => device.deviceId !== 'default').deviceId;
+    assert.equal(
+      (await page.evaluate((deviceId) => window.seyvo.updateSettings({ deviceId }), deviceId)).ok,
+      true,
+    );
+    assert.equal((await page.evaluate(() => window.seyvo.action('micTest'))).ok, true);
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
+      .toBe(true);
+    await page.evaluate(() => window.seyvo.action('micStop'));
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
+      .toBe(false);
+    assert.equal(
+      (await page.evaluate(() => window.seyvo.updateSettings({ deviceId: 'default' }))).ok,
+      true,
+    );
+    deviceSelection = 'discovered input selected, opened and stopped';
+  }
   const result = {
     version: status.version,
+    buildHash: status.buildHash,
     nativeAvailable: status.nativeAvailable,
     startupRoundtrip: true,
     rendererNodeDisabled: true,
     localMicrophone: recording.microphoneActive ? 'hardware opened and stopped' : recording.message,
+    deviceSelection,
     productionFuses: 'verified',
     developmentUrlIgnored: true,
     liveGoogle:

@@ -9,12 +9,15 @@ let active:
       pending: Set<Promise<unknown>>;
       cancelled: boolean;
       sequence: number;
+      devicesChanged?: () => void;
     }
   | undefined;
 async function cleanup(id: string): Promise<void> {
   const current = active;
   if (!current || current.id !== id) return;
   current.cancelled = true;
+  if (current.devicesChanged)
+    navigator.mediaDevices.removeEventListener('devicechange', current.devicesChanged);
   current.stream?.getTracks().forEach((track) => track.stop());
   current.node?.disconnect();
   await current.context?.close().catch(() => {});
@@ -45,6 +48,25 @@ async function start(command: Extract<RecorderCommand, { kind: 'start' }>): Prom
       return;
     }
     current.stream = stream;
+    const publishDevices = async () => {
+      try {
+        const devices = (await navigator.mediaDevices.enumerateDevices())
+          .filter(
+            (device) =>
+              device.kind === 'audioinput' && device.deviceId && device.deviceId.length <= 300,
+          )
+          .slice(0, 32)
+          .map((device) => ({ deviceId: device.deviceId, label: device.label.slice(0, 200) }));
+        if (!current.cancelled) window.recorder.event({ id: current.id, kind: 'devices', devices });
+      } catch {
+        /* Device discovery must not interrupt an active recording. */
+      }
+    };
+    current.devicesChanged = () => {
+      void publishDevices();
+    };
+    navigator.mediaDevices.addEventListener('devicechange', current.devicesChanged);
+    void publishDevices();
     for (const track of stream.getTracks())
       track.onended = () => {
         window.recorder.event({

@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { quitApp } from './helpers';
 test('real Electron onboarding, persistence, security boundary and local microphone flow', async () => {
   const launchedAt = Date.now();
   const profile = await mkdtemp(join(tmpdir(), 'seyvo-e2e-'));
@@ -45,15 +46,23 @@ test('real Electron onboarding, persistence, security boundary and local microph
       const ws = requireApp('ws');
       const server = new ws.WebSocketServer({ port: 0, host: '127.0.0.1' });
       await new Promise<void>((resolve) => server.on('listening', resolve));
+      let connections = 0;
       server.on(
         'connection',
         (socket: {
           on: (event: string, callback: (data: Buffer) => void) => void;
           send: (data: string) => void;
         }) => {
+          const reject = ++connections === 2;
           socket.on('message', (data) => {
             if (JSON.parse(data.toString()).setup)
-              socket.send(JSON.stringify({ setupComplete: {} }));
+              socket.send(
+                JSON.stringify(
+                  reject
+                    ? { error: { code: 403, status: 'PERMISSION_DENIED' } }
+                    : { setupComplete: {} },
+                ),
+              );
           });
         },
       );
@@ -67,6 +76,23 @@ test('real Electron onboarding, persistence, security boundary and local microph
     const keySaved = await page.evaluate(() => window.seyvo.saveKey('AQ.example.test-token'));
     expect(keySaved.ok).toBe(true);
     expect((await page.evaluate(() => window.seyvo.status())).providerVerified).toBe(true);
+    const savedFingerprint = () =>
+      app.evaluate(async ({ app }) => {
+        const bytes = await process
+          .getBuiltinModule('fs')
+          .promises.readFile(
+            process.getBuiltinModule('path').join(app.getPath('userData'), 'key.enc'),
+          );
+        return process.getBuiltinModule('crypto').createHash('sha256').update(bytes).digest('hex');
+      });
+    const beforeReplacement = await savedFingerprint();
+    const rejectedReplacement = await page.evaluate(() =>
+      window.seyvo.saveKey('synthetic-rejected-replacement'),
+    );
+    expect(rejectedReplacement.ok).toBe(false);
+    expect(await savedFingerprint()).toBe(beforeReplacement);
+    expect((await page.evaluate(() => window.seyvo.status())).hasKey).toBe(true);
+    expect((await page.evaluate(() => window.seyvo.testKey())).ok).toBe(true);
     expect((await page.evaluate(() => window.seyvo.removeKey())).ok).toBe(true);
     await page.getByRole('button', { name: 'Dictionary', exact: true }).click();
     await page.getByLabel('Add a word or phrase').fill('Seyvo-नमस्ते');
@@ -93,6 +119,20 @@ test('real Electron onboarding, persistence, security boundary and local microph
       `Windows local mic observation: phase=${mic.phase}, active=${mic.microphoneActive}, message=${mic.message}`,
     );
     if (mic.microphoneActive) {
+      await expect
+        .poll(() =>
+          page
+            .locator('select[aria-label="Microphone"] option')
+            .evaluateAll(
+              (options) =>
+                options.filter(
+                  (option) =>
+                    (option as HTMLOptionElement).value &&
+                    (option as HTMLOptionElement).value !== 'default',
+                ).length,
+            ),
+        )
+        .toBeGreaterThan(0);
       const overlay = app.windows().find((candidate) => candidate.url().includes('#overlay'));
       if (overlay) {
         const rejected = await overlay.evaluate(() =>
@@ -101,6 +141,36 @@ test('real Electron onboarding, persistence, security boundary and local microph
         expect(rejected.ok).toBe(false);
         await overlay.screenshot({ path: 'artifacts/screenshots/overlay.png' });
       }
+      await page.getByRole('button', { name: 'Stop microphone', exact: true }).click();
+      await expect
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
+        .toBe(false);
+      const dashboardDenied = await page.evaluate(async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((track) => track.stop());
+          return false;
+        } catch (error) {
+          return error instanceof DOMException && error.name === 'NotAllowedError';
+        }
+      });
+      expect(dashboardDenied).toBe(true);
+      const device = await page
+        .locator('select[aria-label="Microphone"] option')
+        .evaluateAll((options) =>
+          options
+            .map((option) => (option as HTMLOptionElement).value)
+            .find((value) => value && value !== 'default'),
+        );
+      expect(device).toBeTruthy();
+      await page.getByLabel('Microphone', { exact: true }).selectOption(device!);
+      await expect
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).settings.deviceId)
+        .toBe(device);
+      await page.getByRole('button', { name: 'Test microphone', exact: true }).click();
+      await expect
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
+        .toBe(true);
       await page.getByRole('button', { name: 'Stop microphone', exact: true }).click();
       await expect
         .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
@@ -134,7 +204,7 @@ test('real Electron onboarding, persistence, security boundary and local microph
       ),
     );
   } finally {
-    await app.close();
+    await quitApp(app);
     await rm(profile, { recursive: true, force: true });
   }
 });

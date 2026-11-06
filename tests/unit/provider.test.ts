@@ -38,6 +38,50 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Google wire adapter', () => {
+  it.each([
+    [401, 'rejected'],
+    [403, 'rejected'],
+    [404, 'cannot access'],
+    [429, 'quota'],
+    [500, 'temporarily unavailable'],
+    [503, 'temporarily unavailable'],
+  ])('reports setup failure %s without exposing provider detail', async (code, expected) => {
+    const f = fixture();
+    const ready = f.connect();
+    const failed = expect(ready).rejects.toThrow(String(expected));
+    f.socket.message({ error: { code, status: 'synthetic-private-detail' } });
+    await failed;
+    expect(f.socket.terminate).toHaveBeenCalled();
+    expect(f.error).not.toHaveBeenCalled();
+  });
+  it('times out missing setup and suppresses late readiness', async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const ready = f.connect();
+    const failed = expect(ready).rejects.toThrow('setup timed out');
+    f.socket.emit('open');
+    await vi.advanceTimersByTimeAsync(12000);
+    await failed;
+    f.socket.message({ setupComplete: {} });
+    expect(() => f.provider.send(new ArrayBuffer(100), 0)).toThrow('not ready');
+    expect(f.socket.terminate).toHaveBeenCalledOnce();
+  });
+  it('preserves committed text when the connection drops during finalization', async () => {
+    const f = fixture();
+    const ready = f.connect();
+    f.socket.message({ setupComplete: {} });
+    await ready;
+    f.socket.message({
+      serverContent: { inputTranscription: { text: 'Synthetic final segment' } },
+    });
+    const result = f.provider.finish();
+    f.socket.emit('close', 1006, Buffer.from('synthetic-private-detail'));
+    expect(await result).toEqual({ text: 'Synthetic final segment', complete: false });
+    expect(f.error).toHaveBeenCalledOnce();
+    expect(f.error.mock.calls[0]![0].message).not.toContain('synthetic-private-detail');
+    f.socket.message({ serverContent: { inputTranscription: { text: 'Late words' } } });
+    expect(f.provider.text).toBe('Synthetic final segment');
+  });
   it('sends the coding preset only after opt-in, alongside user vocabulary', async () => {
     for (const enabled of [false, true]) {
       const socket = new Socket();

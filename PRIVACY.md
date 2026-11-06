@@ -7,6 +7,7 @@ Effective date: 7 November 2026. Applies to the source distribution and 0.1 deve
 | Data | Processing and retention |
 | --- | --- |
 | Microphone audio | Captured only after explicit activation. Local mic tests do not upload. Dictation audio streams directly to Google's Gemini API under your key. No audio files are written by Seyvo. Tracks and buffers are released on stop, cancellation, failure or exit. |
+| Microphone devices | After explicit capture starts, the recorder discovers available input IDs/names for the device selector. The list stays in local process memory until exit and is not sent to Google, the overlay or diagnostics. Only the selected device ID is saved in preferences. |
 | API key | Entered once in the settings window, cleared from the input when submitted, tested in main, encrypted using Electron's asynchronous Windows credential protection, and stored in `key.enc`. A saved key is never returned to the UI. |
 | Transcript | Finalized segments are held in memory for insertion and recovery. Interim captions are hidden by default. Dismiss or quit clears in-memory recovery. JavaScript memory and OS swap cannot be guaranteed to be securely erased. |
 | History | Off by default. When enabled, final text and timestamp are encrypted in `history.enc`; optional app executable names require a separate setting. Default retention is seven days and at most 100 entries. No recorded audio is saved. Disabling history deletes its file. |

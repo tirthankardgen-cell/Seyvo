@@ -23,6 +23,8 @@ flowchart LR
 
 `Windows` restricts permission to audio in the recorder during an authorized capture. No remote page is loaded into an app window. Browser opens use named fixed links. The hidden recorder loads only when needed. Its AudioWorklet low-pass filters, downmixes and converts input to 16 kHz PCM16; max four IPC packets await acknowledgement. Provider upload stops if socket buffering exceeds 64 KB. No audio is persisted.
 
+Microphone discovery happens in the authorized recorder after it obtains a stream. It reports at most 32 bounded input descriptors through validated, session-scoped IPC. Main keeps the list in memory for the dashboard; the overlay receives no device descriptors. Only the chosen device ID is persisted as a preference. The dashboard cannot capture audio, even after a recorder has received permission. Device-change listeners exist only during capture. Permission denial and unavailable-device errors destroy the recorder window, leave the microphone off and show a dismissible error on every dashboard page.
+
 ## Provider contract
 
 `GeminiLive` implements the official WebSocket setup/realtimeInput protocol, using installed `@google/genai` types for transcription messages/configuration. The SDK 3.0.0 `Session.conn` exposes only connect/send/close, and pending `live.connect()` does not expose a cancellation handle. The verified protocol adapter was selected for deterministic terminate, handshake timeout, max message payload and bufferedAmount checks. It uses only Google's fixed endpoint and the user's key; no proxy.

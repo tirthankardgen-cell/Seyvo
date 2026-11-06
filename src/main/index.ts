@@ -23,6 +23,7 @@ import {
   vocabularySchema,
   type ActionResult,
   type Status,
+  type Microphone,
 } from '../shared/contracts';
 import { AppError, publicError } from '../shared/errors';
 import { Storage } from './storage';
@@ -63,6 +64,7 @@ async function run(): Promise<void> {
   await storage.initialize();
   let hasKey = await storage.hasKey();
   let providerVerified = false;
+  let microphones: Microphone[] = [];
   let keyBusy = false;
   let settingsBusy = false;
   let shuttingDown = false;
@@ -137,6 +139,7 @@ async function run(): Promise<void> {
       hasKey,
       providerVerified,
       microphoneActive: coordinator.microphoneActive,
+      microphones,
       level: coordinator.level,
       elapsed: coordinator.elapsed,
       interim: coordinator.interim,
@@ -362,7 +365,9 @@ async function run(): Promise<void> {
   ipcMain.handle('app:status', (event) => {
     windows.authorize(event, 'read');
     const snapshot = status();
-    return event.sender === windows.overlay?.webContents ? { ...snapshot, recovery: '' } : snapshot;
+    return event.sender === windows.overlay?.webContents
+      ? { ...snapshot, recovery: '', microphones: [] }
+      : snapshot;
   });
   handle('app:settings', updateSettings);
   handle('app:key-save', async (input) => {
@@ -530,13 +535,39 @@ async function run(): Promise<void> {
     try {
       windows.authorize(event, 'recorder');
       const payload = z
-        .object({
-          id: z.string().uuid(),
-          kind: z.enum(['started', 'stopped', 'error']),
-          error: z.string().max(300).optional(),
-        })
-        .strict()
+        .union([
+          z
+            .object({
+              id: z.string().uuid(),
+              kind: z.enum(['started', 'stopped', 'error']),
+              error: z.string().max(300).optional(),
+            })
+            .strict(),
+          z
+            .object({
+              id: z.string().uuid(),
+              kind: z.literal('devices'),
+              devices: z
+                .array(
+                  z
+                    .object({
+                      deviceId: z.string().min(1).max(300),
+                      label: z.string().max(200),
+                    })
+                    .strict(),
+                )
+                .max(32),
+            })
+            .strict(),
+        ])
         .parse(input);
+      if (payload.kind === 'devices') {
+        if (windows.isRecordingSession(payload.id)) {
+          microphones = payload.devices;
+          publish();
+        }
+        return;
+      }
       windows.recorderEvent(payload);
       if (payload.kind === 'error')
         void coordinator.fail(new AppError(payload.error ?? 'Microphone unavailable.'));

@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { quitApp } from './helpers';
 
 const env = Object.fromEntries(
   Object.entries(process.env).filter(
@@ -110,7 +111,7 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       expect(bounds.bounds.y + bounds.bounds.height).toBeLessThanOrEqual(
         bounds.area.y + bounds.area.height,
       );
-      await app.close();
+      await quitApp(app);
       app = await electron.launch({ args, env });
       const reopened = await app.firstWindow();
       await reopened.waitForFunction(() => Boolean(window.seyvo));
@@ -123,7 +124,7 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       });
       expect(persisted.microphoneActive).toBe(false);
     } finally {
-      await app.close();
+      await quitApp(app);
       await rm(profile, { recursive: true, force: true });
     }
   });
@@ -198,7 +199,7 @@ test('recorder crash, suspend and screen lock release capture; close hides to tr
       .toBe(true);
     expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
   } finally {
-    await app.close();
+    await quitApp(app);
     await rm(profile, { recursive: true, force: true });
   }
 });

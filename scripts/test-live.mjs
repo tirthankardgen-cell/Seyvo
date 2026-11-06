@@ -92,6 +92,8 @@ try {
     (await context.waitForEvent('page'));
   await page.waitForFunction(() => Boolean(window.seyvo));
   const initial = await page.evaluate(() => window.seyvo.status());
+  report.version = initial.version;
+  report.buildHash = initial.buildHash;
   assert.equal(initial.hasKey, true, 'Save a user-owned key in the app before this opt-in test.');
   assert.equal(initial.microphoneActive, false);
   assert.ok(!initial.recovery, 'Resolve existing recovery before running acceptance.');

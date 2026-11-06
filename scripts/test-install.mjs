@@ -92,6 +92,8 @@ try {
   assert.equal(status.nativeAvailable, true);
   if (initial.startup) await second.page.evaluate(() => window.seyvo.startup(true));
   const report = {
+    version: status.version,
+    buildHash: status.buildHash,
     uninstallRemovedExecutable: true,
     uninstallRemovedStartup: true,
     reinstallLaunched: true,
