@@ -5,6 +5,7 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
+import { quitTestedApp } from './quit-tested-app.mjs';
 const target = resolve('.tools/installed');
 const executable = join(target, 'Seyvo.exe');
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
@@ -18,7 +19,6 @@ async function launch() {
     windowsHide: true,
     stdio: ['ignore', 'ignore', 'pipe'],
   });
-  const exited = new Promise((done) => processApp.once('exit', done));
   const endpoint = await new Promise((done, fail) => {
     const timer = setTimeout(
       () => fail(new Error('Installed application launch timed out')),
@@ -41,11 +41,7 @@ async function launch() {
   await page.waitForFunction(() => Boolean(window.seyvo));
   return {
     page,
-    close: async () => {
-      await page.evaluate(() => window.seyvo.action('quit')).catch(() => {});
-      await browser.close().catch(() => {});
-      await exited;
-    },
+    close: () => quitTestedApp(page, processApp, browser),
   };
 }
 async function run(exe, args) {
@@ -91,6 +87,7 @@ try {
   assert.equal(status.settings.shortcut, initial.settings.shortcut);
   assert.equal(status.nativeAvailable, true);
   if (initial.startup) await second.page.evaluate(() => window.seyvo.startup(true));
+  await second.close();
   const report = {
     version: status.version,
     buildHash: status.buildHash,
@@ -100,6 +97,7 @@ try {
     encryptedKeyPresencePreserved: initial.hasKey,
     settingsPreserved: true,
     nativeAvailable: true,
+    cleanExit: true,
   };
   await mkdir('artifacts/packaged', { recursive: true });
   await writeFile('artifacts/packaged/install-cycle.json', JSON.stringify(report, null, 2));

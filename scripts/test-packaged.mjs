@@ -4,6 +4,7 @@ import { getCurrentFuseWire, FuseV1Options, FuseState } from '@electron/fuses';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
+import { quitTestedApp } from './quit-tested-app.mjs';
 await mkdir('artifacts/packaged', { recursive: true });
 const executable = resolve(process.argv[2] ?? '.tools/installed/Seyvo.exe');
 const fuses = await getCurrentFuseWire(executable);
@@ -114,9 +115,10 @@ try {
       'This smoke test does not contact Google; opt-in live results are recorded separately.',
     executable,
   };
+  await quitTestedApp(page, processApp, browser);
+  result.cleanExit = true;
   await writeFile('artifacts/packaged/results.json', JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 2));
-  await page.evaluate(() => window.seyvo.action('quit')).catch(() => {});
 } finally {
   await browser?.close().catch(() => {});
   if (!processApp.killed) processApp.kill();

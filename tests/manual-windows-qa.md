@@ -69,6 +69,10 @@ Physical microphone discovery produced usable device IDs; selecting one opened a
 
 The user deferred the physical spoken test and requested continued automated testing. Human speech remains pending.
 
+Build `a9280db39247` passed [Windows CI 42309748565](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42309748565). Installed microphone selection, production fuses, development-URL rejection, startup roundtrip and generated speech through live Google/native input passed. All 55 finalized characters matched the original Windows Forms field. Upgrade and uninstall/reinstall retained encrypted key presence/preferences and removed startup registration. The packaged test harness now lets its debug evaluation finish before quitting and requires a zero process exit within ten seconds; the earlier debug-connection shutdown hang is not counted as a clean-exit pass.
+
+An additional test used the installed native helper against the uniquely identified `Seyvo-acceptance-synthetic.txt` Notepad tab. Direct Unicode input did not exactly append the known fixture (22 UTF-16 units received for a 32-unit fixture in the repeat). No other document or clipboard was used, and no Enter was sent. This is a failed compatibility observation, not a Notepad acceptance pass. Clipboard mode there remains untested.
+
 ## Release gate
 
 Source and an explicitly labelled unsigned validation prerelease may be shared. Do not promote a stable commercial release until live human speech, relevant target applications, clean-machine installation and the chosen support matrix are accepted, and the owner addresses signing and brand clearance.

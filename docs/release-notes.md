@@ -10,6 +10,8 @@ The app implements explicit shortcut → recorder/worklet → Google Live Transc
 
 This is an unsigned validation prerelease. Human-spoken English/Hindi/Hinglish, clean-machine installation and the wider physical Windows/target matrix remain acceptance gates. Generated speech through real Google and physical microphone open/stop are distinct tests. No stable commercial readiness is claimed. Do not disable Windows security controls to install it.
 
+Known target limitation: direct Unicode input did not reproduce the test fixture exactly in the tested Windows 11 Notepad. The complete transcript remains available for recovery. Clipboard mode in Notepad is not yet accepted. Windows Forms and an isolated Edge textarea have separate successful native-input observations.
+
 Requires Windows x64, microphone, internet and a user-owned Gemini key with access to the transcription model. Google pricing, quotas and data terms apply. MIT permits commercial reuse with notices; trademark clearance, signing and any paid support policy remain owner decisions. There is no Seyvo backend, telemetry, subscription, automatic updater or always-on recording. ARM64 and push-to-talk are not shipped.
 
 Verify the attached SHA256SUMS.txt before distribution. The release includes the installer, runtime CycloneDX SBOM and complete lockfile license inventory. Uninstall preserves the encrypted user profile; follow PRIVACY.md for deliberate removal. Inspect the destination before retrying an uncertain insertion.

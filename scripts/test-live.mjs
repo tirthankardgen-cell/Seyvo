@@ -6,6 +6,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
+import { quitTestedApp } from './quit-tested-app.mjs';
 
 const human = process.argv.includes('--human');
 const hardware = human || process.argv.includes('--hardware');
@@ -196,7 +197,14 @@ try {
         })
         .catch(() => {});
     }
-    await page.evaluate(() => window.seyvo.action('quit')).catch(() => {});
+    try {
+      await quitTestedApp(page, child, browser);
+      report.cleanExit = true;
+    } catch {
+      report.result = 'failed';
+      report.error = 'The tested app did not exit cleanly.';
+      process.exitCode = 1;
+    }
   }
   await browser?.close().catch(() => {});
   child.kill();
