@@ -80,7 +80,9 @@ for (const scale of [1, 1.25, 1.5, 2]) {
         .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
         .toBe(true);
       const overlay = app.windows().find((p) => p.url().includes('#overlay'))!;
+      await page.evaluate(() => window.seyvo.action('micStop'));
       // Only display data is synthetic; no production path invents transcripts.
+      // Stop live level broadcasts before injecting the static caption fixture.
       const state = await page.evaluate(() => window.seyvo.status());
       await app.evaluate(({ BrowserWindow }, state) => {
         BrowserWindow.getAllWindows()
@@ -108,7 +110,6 @@ for (const scale of [1, 1.25, 1.5, 2]) {
       expect(bounds.bounds.y + bounds.bounds.height).toBeLessThanOrEqual(
         bounds.area.y + bounds.area.height,
       );
-      await page.evaluate(() => window.seyvo.action('micStop'));
       await app.close();
       app = await electron.launch({ args, env });
       const reopened = await app.firstWindow();
