@@ -6,6 +6,8 @@ Discover microphones through the authorized recorder so Settings can offer real 
 
 Show microphone failures on Settings and onboarding, release the hidden recorder after permission denial, and recover from an unavailable saved input by selecting Windows default. Add provider authentication/quota/service/timeout/finalization failure coverage and verify failed key replacement retains the previous encrypted key. Validation now includes 41 unit/integration tests and eight Electron scenarios.
 
+Exclude Electron Vite's generated config loader from Git status so a clean build reports its commit without an incorrect modified suffix.
+
 ## 0.1.2 — validation
 
 Complete sound cues with Windows playback and preview, an opt-in coding vocabulary preset, three bubble sizes, dictionary editing, and About build/maintainer/privacy/contributor details. Fix clipped captions and add compact layouts for 200% zoom. Reposition the overlay on display changes and invalidate delayed shows after hiding.
