@@ -1,0 +1,253 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Web.Script.Serialization;
+using System.Windows.Automation;
+using System.Windows.Automation.Text;
+
+// Private, bounded JSON-lines protocol on inherited pipes. No network, shell,
+// clipboard reader command, text scraping, keyboard hooks or arbitrary HWND API.
+internal static class Program {
+  [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
+  [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] struct GUIINFO {
+    public int Size, Flags; public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret; public RECT CaretRect;
+  }
+  [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort Vk, Scan; public uint Flags, Time; public UIntPtr Extra; }
+  [StructLayout(LayoutKind.Explicit, Size=40)] struct INPUT { [FieldOffset(0)] public uint Type; [FieldOffset(8)] public KEYBDINPUT Key; }
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] static extern bool GetGUIThreadInfo(uint thread, ref GUIINFO info);
+  [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder name,int size);
+  [DllImport("user32.dll",EntryPoint="GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr h,int index);
+  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h, out RECT rect);
+  [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+  [DllImport("user32.dll", SetLastError=true)] static extern uint SendInput(uint count, INPUT[] inputs, int size);
+  [DllImport("user32.dll")] static extern bool OpenClipboard(IntPtr owner);
+  [DllImport("user32.dll")] static extern bool CloseClipboard();
+  [DllImport("user32.dll")] static extern bool EmptyClipboard();
+  [DllImport("user32.dll")] static extern uint EnumClipboardFormats(uint format);
+  [DllImport("user32.dll")] static extern IntPtr GetClipboardData(uint format);
+  [DllImport("user32.dll")] static extern IntPtr SetClipboardData(uint format, IntPtr data);
+  [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
+  [DllImport("user32.dll")] static extern IntPtr GetClipboardOwner();
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClipboardFormatName(uint format, StringBuilder name, int size);
+  [DllImport("kernel32.dll")] static extern UIntPtr GlobalSize(IntPtr h);
+  [DllImport("kernel32.dll")] static extern IntPtr GlobalLock(IntPtr h);
+  [DllImport("kernel32.dll")] static extern bool GlobalUnlock(IntPtr h);
+  [DllImport("kernel32.dll")] static extern IntPtr GlobalAlloc(uint flags, UIntPtr size);
+  [DllImport("kernel32.dll")] static extern IntPtr GlobalFree(IntPtr h);
+  [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+  static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 220000 };
+  static readonly Dictionary<string, Target> Targets = new Dictionary<string, Target>();
+  static IntPtr clipboardOwner;
+  sealed class Target {
+    public IntPtr Window, Focus;
+    public uint Pid, Thread;
+    public long Started;
+    public string App, Runtime;
+    public RECT Caret;
+    public TextPatternRange Selection;
+    public AutomationElement Element;
+    public AutomationEventHandler SelectionListener;
+    public volatile bool SelectionChanged;
+    public bool InputAttempted;
+  }
+  static GUIINFO Gui(uint thread) {
+    GUIINFO info = new GUIINFO(); info.Size = Marshal.SizeOf(typeof(GUIINFO));
+    if (!GetGUIThreadInfo(thread, ref info)) throw new InvalidOperationException("target-unavailable");
+    return info;
+  }
+  static string Identity(AutomationElement element) { return String.Join("-", element.GetRuntimeId()); }
+  static AutomationElement SafeElement(uint pid) {
+    AutomationElement element = AutomationElement.FocusedElement;
+    if (element == null || element.Current.ProcessId != pid || element.Current.IsPassword || !element.Current.IsEnabled)
+      throw new InvalidOperationException("unsafe-field");
+    object pattern;
+    if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern) && ((ValuePattern)pattern).Current.IsReadOnly)
+      throw new InvalidOperationException("read-only-field");
+    if (element.TryGetCurrentPattern(TextPattern.Pattern,out pattern)) {
+      object readOnly=((TextPattern)pattern).DocumentRange.GetAttributeValue(TextPattern.IsReadOnlyAttribute);
+      if(readOnly is bool && (bool)readOnly) throw new InvalidOperationException("read-only-field");
+    }
+    return element;
+  }
+  static void SafeNativeControl(IntPtr focus) {
+    StringBuilder name=new StringBuilder(256); GetClassName(focus,name,name.Capacity);
+    string kind=name.ToString();
+    if(kind.Equals("Edit",StringComparison.OrdinalIgnoreCase) || kind.IndexOf(".EDIT.",StringComparison.OrdinalIgnoreCase)>=0 || kind.StartsWith("RichEdit",StringComparison.OrdinalIgnoreCase)) {
+      long style=GetWindowLongPtr(focus,-16).ToInt64();
+      if((style & 0x800)!=0) throw new InvalidOperationException("read-only-field");
+      if((style & 0x20)!=0) throw new InvalidOperationException("unsafe-field");
+    }
+  }
+  static TextPatternRange Selection(AutomationElement element) {
+    object pattern;
+    if (!element.TryGetCurrentPattern(TextPattern.Pattern, out pattern)) return null;
+    TextPatternRange[] ranges = ((TextPattern)pattern).GetSelection();
+    return ranges.Length == 1 ? ranges[0].Clone() : null;
+  }
+  static void ClearTargets() {
+    foreach(Target target in Targets.Values) {
+      if(target.SelectionListener!=null) {
+        try { Automation.RemoveAutomationEventHandler(TextPattern.TextSelectionChangedEvent,target.Element,target.SelectionListener); } catch { }
+      }
+    }
+    Targets.Clear();
+  }
+  static object Capture(int ownPid, bool allowPractice) {
+    IntPtr window = GetForegroundWindow(); uint pid; uint thread = GetWindowThreadProcessId(window, out pid);
+    if (window == IntPtr.Zero || pid == ownPid && !allowPractice) throw new InvalidOperationException("choose-target");
+    Process process = Process.GetProcessById((int)pid);
+    GUIINFO gui = Gui(thread); SafeNativeControl(gui.Focus); AutomationElement element = SafeElement(pid);
+    if (pid == ownPid && (element.Current.Name != "Dictation practice" || element.Current.ControlType != ControlType.Edit)) throw new InvalidOperationException("choose-practice-field");
+    Target target = new Target { Window=window, Focus=gui.Focus, Pid=pid, Thread=thread,
+      Started=process.StartTime.ToFileTimeUtc(), App=process.ProcessName + ".exe", Runtime=Identity(element),
+      Caret=gui.CaretRect, Selection=Selection(element) };
+    RECT bounds; if (!GetWindowRect(window, out bounds)) throw new InvalidOperationException("target-unavailable");
+    ClearTargets();
+    target.Element=element;
+    target.SelectionListener=(sender,args)=> { target.SelectionChanged=true; };
+    try { Automation.AddAutomationEventHandler(TextPattern.TextSelectionChangedEvent,element,TreeScope.Element,target.SelectionListener); }
+    catch { target.SelectionListener=null; }
+    string token = Guid.NewGuid().ToString("N"); Targets[token] = target;
+    return new { token=token, app=target.App, x=bounds.Left, y=bounds.Top, width=bounds.Right-bounds.Left, height=bounds.Bottom-bounds.Top };
+  }
+  static void Verify(Target target) {
+    if(target.InputAttempted) throw new InvalidOperationException("input-already-attempted");
+    uint pid;
+    if (!IsWindow(target.Window) || GetForegroundWindow() != target.Window ||
+      GetWindowThreadProcessId(target.Window, out pid) != target.Thread || pid != target.Pid ||
+      Process.GetProcessById((int)pid).StartTime.ToFileTimeUtc() != target.Started)
+      throw new InvalidOperationException("target-changed");
+    GUIINFO gui = Gui(target.Thread);
+    SafeNativeControl(gui.Focus);
+    if (gui.Focus != target.Focus) throw new InvalidOperationException("field-changed");
+    if (target.SelectionChanged || gui.CaretRect.Left != target.Caret.Left || gui.CaretRect.Top != target.Caret.Top)
+      throw new InvalidOperationException("caret-changed");
+    AutomationElement element = SafeElement(pid);
+    if (Identity(element) != target.Runtime) throw new InvalidOperationException("field-changed");
+    if (target.Selection != null) {
+      TextPatternRange current = Selection(element);
+      if (current == null || current.CompareEndpoints(TextPatternRangeEndpoint.Start, target.Selection, TextPatternRangeEndpoint.Start) != 0 ||
+        current.CompareEndpoints(TextPatternRangeEndpoint.End, target.Selection, TextPatternRangeEndpoint.End) != 0)
+        throw new InvalidOperationException("caret-changed");
+    }
+  }
+  static bool ModifiersDown() {
+    foreach(int key in new int[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }) if (GetAsyncKeyState(key) < 0) return true;
+    return false;
+  }
+  static void WaitModifiers() {
+    Stopwatch timer = Stopwatch.StartNew();
+    while (ModifiersDown()) { if (timer.ElapsedMilliseconds > 1500) throw new InvalidOperationException("release-modifiers"); Thread.Sleep(10); }
+  }
+  static INPUT Key(ushort vk, ushort scan, uint flags) { return new INPUT { Type=1, Key=new KEYBDINPUT { Vk=vk, Scan=scan, Flags=flags } }; }
+  static void Send(INPUT[] inputs) {
+    if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT))) != inputs.Length)
+      throw new InvalidOperationException("input-blocked");
+  }
+  static void Open() {
+    for (int i=0; i<20; i++) { if (OpenClipboard(clipboardOwner)) return; Thread.Sleep(10); }
+    throw new InvalidOperationException("clipboard-busy");
+  }
+  static bool Supported(uint format) {
+    if (format == 1 || format == 7 || format == 8 || format == 13 || format == 16 || format == 17) return true;
+    StringBuilder name = new StringBuilder(256); GetClipboardFormatName(format, name, name.Capacity);
+    return name.ToString() == "HTML Format" || name.ToString() == "Rich Text Format" || name.ToString() == "PNG";
+  }
+  static Dictionary<uint, byte[]> Snapshot() {
+    Dictionary<uint, byte[]> data = new Dictionary<uint, byte[]>(); uint format=0; long total=0;
+    while ((format=EnumClipboardFormats(format)) != 0) {
+      if (!Supported(format)) throw new InvalidOperationException("clipboard-format-unsupported");
+      IntPtr handle=GetClipboardData(format); long size=(long)GlobalSize(handle).ToUInt64(); total+=size;
+      if (size <= 0 || total > 16777216) throw new InvalidOperationException("clipboard-too-large");
+      IntPtr ptr=GlobalLock(handle); if (ptr == IntPtr.Zero) throw new InvalidOperationException("clipboard-unavailable");
+      try { byte[] bytes=new byte[(int)size]; Marshal.Copy(ptr, bytes, 0, bytes.Length); data[format]=bytes; }
+      finally { GlobalUnlock(handle); }
+    }
+    return data;
+  }
+  static void Put(uint format, byte[] bytes) {
+    IntPtr handle=GlobalAlloc(0x0042, (UIntPtr)bytes.Length);
+    if (handle == IntPtr.Zero) throw new InvalidOperationException("clipboard-allocation");
+    bool transferred=false;
+    try {
+      IntPtr ptr=GlobalLock(handle); if (ptr==IntPtr.Zero) throw new InvalidOperationException("clipboard-allocation");
+      try { Marshal.Copy(bytes, 0, ptr, bytes.Length); } finally { GlobalUnlock(handle); }
+      if (SetClipboardData(format, handle)==IntPtr.Zero) throw new InvalidOperationException("clipboard-write");
+      transferred=true;
+    } finally { if (!transferred) GlobalFree(handle); }
+  }
+  static object Insert(string token, string text, string method) {
+    if (text.Length == 0 || text.Length > 100000 || text.IndexOf('\0') >= 0) throw new InvalidOperationException("invalid-text");
+    Target target; if (!Targets.TryGetValue(token, out target)) throw new InvalidOperationException("target-expired");
+    WaitModifiers(); Verify(target);
+    if (method == "unicode") {
+      // CR/LF as virtual keys could submit in chat fields. Refuse multiline here.
+      if (text.IndexOfAny(new char[] {'\r','\n'}) >= 0 || text.Length > 5000) throw new InvalidOperationException("use-clipboard-mode");
+      List<INPUT> inputs=new List<INPUT>();
+      foreach(char c in text) { inputs.Add(Key(0,c,4)); inputs.Add(Key(0,c,6)); }
+      Verify(target); target.InputAttempted=true; Send(inputs.ToArray());
+      return new { attempted=true, restored=true, message="Insertion may have failed. Check the target before retrying." };
+    }
+    Dictionary<uint,byte[]> original=null; uint ours=0; bool restored=false;
+    Open();
+    try {
+      original=Snapshot(); Verify(target);
+      if (!EmptyClipboard()) throw new InvalidOperationException("clipboard-busy");
+      try { Put(13, Encoding.Unicode.GetBytes(text.Replace("\r\n", "\n").Replace("\n", "\r\n")+"\0")); }
+      catch { EmptyClipboard(); foreach(var item in original) Put(item.Key,item.Value); throw; }
+    } finally { CloseClipboard(); }
+    try {
+      // Windows can advance the sequence when CloseClipboard publishes formats.
+      // Sample afterward, then verify ownership so another writer is never
+      // mistaken for our transaction or overwritten during restoration.
+      ours=GetClipboardSequenceNumber();
+      if(GetClipboardOwner()!=clipboardOwner) { ours=0; throw new InvalidOperationException("clipboard-changed"); }
+      Verify(target); if (ModifiersDown()) throw new InvalidOperationException("release-modifiers");
+      if (GetClipboardSequenceNumber()!=ours || GetClipboardOwner()!=clipboardOwner) throw new InvalidOperationException("clipboard-changed");
+      target.InputAttempted=true;
+      Send(new INPUT[] {Key(0x11,0,0),Key(0x56,0,0),Key(0x56,0,2),Key(0x11,0,2)});
+      Thread.Sleep(800);
+    } finally {
+      try {
+        Open();
+        try { if (ours!=0 && GetClipboardSequenceNumber()==ours && GetClipboardOwner()==clipboardOwner) { EmptyClipboard(); foreach(var item in original) Put(item.Key,item.Value); restored=true; } }
+        finally { CloseClipboard(); }
+      } finally { foreach(byte[] bytes in original.Values) Array.Clear(bytes,0,bytes.Length); }
+    }
+    return new { attempted=true, restored=restored, message="Insertion may have failed. Check the target before retrying." };
+  }
+  [MTAThread] static void Main() {
+    Console.InputEncoding=Encoding.UTF8; Console.OutputEncoding=new UTF8Encoding(false);
+    SetProcessDpiAwarenessContext(new IntPtr(-4));
+    using (System.Windows.Forms.Form owner=new System.Windows.Forms.Form()) {
+      clipboardOwner=owner.Handle;
+      string line;
+      while ((line=Console.ReadLine()) != null) {
+        int id=0;
+        try {
+          if (line.Length > 220000) throw new InvalidOperationException("request-too-large");
+          var request=Json.Deserialize<Dictionary<string,object>>(line); id=Convert.ToInt32(request["id"]);
+          string command=Convert.ToString(request["command"]); object result;
+          if (command=="ping") result=new { version=1, architecture="x64" };
+          else if (command=="capture") result=Capture(Convert.ToInt32(request["ownPid"]),request.ContainsKey("allowPractice") && Convert.ToBoolean(request["allowPractice"]));
+          else if (command=="insert") result=Insert(Convert.ToString(request["token"]),Convert.ToString(request["text"]),Convert.ToString(request["method"]));
+          else if (command=="clear") { ClearTargets(); result=new { cleared=true }; }
+          else throw new InvalidOperationException("unknown-command");
+          Console.WriteLine(Json.Serialize(new { id=id, ok=true, result=result }));
+        } catch (Exception e) {
+          // Only our own fixed error codes cross the process boundary.
+          string code=e is InvalidOperationException && e.Message.Length<60 && e.Message.IndexOf(' ')<0 ? e.Message : "native-operation-failed";
+          Console.WriteLine(Json.Serialize(new { id=id, ok=false, error=code }));
+        }
+      }
+      ClearTargets();
+    }
+  }
+}

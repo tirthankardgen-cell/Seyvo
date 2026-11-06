@@ -1,0 +1,52 @@
+name: Build draft Windows release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing semantic tag matching package.json (for example v0.1.0)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: windows-latest
+    environment: release
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 26.13.0
+          cache: npm
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$') { throw 'Invalid tag' }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw 'Tag/version mismatch' }
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:e2e
+      - run: npm audit --audit-level=moderate
+      - run: npm run supply-chain
+      - name: Build Windows installer
+        run: npm run dist:win
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      - run: npm run checksums
+      - run: npm run scan:secrets -- dist/win-unpacked/resources/app.asar
+      - name: Create reviewable draft prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Get-ChildItem dist -Filter '*-setup.exe' | Select-Object -ExpandProperty FullName
+          gh release create $env:RELEASE_TAG $installer dist/SHA256SUMS.txt artifacts/sbom.cdx.json artifacts/licenses.json --repo $env:GITHUB_REPOSITORY --verify-tag --draft --prerelease --title "Seyvo $env:RELEASE_TAG - validation build" --notes-file docs/release-notes.md

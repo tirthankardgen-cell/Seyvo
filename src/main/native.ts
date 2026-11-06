@@ -1,0 +1,117 @@
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createInterface } from 'node:readline';
+import { z } from 'zod';
+import { AppError } from '../shared/errors';
+export const targetSchema = z.object({
+  token: z.string(),
+  app: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+});
+export type Target = z.infer<typeof targetSchema>;
+export class NativeBridge {
+  private child?: ChildProcessWithoutNullStreams;
+  private next = 0;
+  private pending = new Map<
+    number,
+    { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
+  >();
+  available = false;
+  constructor(private executable: string) {}
+  async start(): Promise<void> {
+    const child = spawn(this.executable, [], {
+      windowsHide: true,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    this.child = child;
+    const lines = createInterface({ input: child.stdout });
+    lines.on('line', (line) => {
+      if (line.length > 240000) {
+        this.close();
+        return;
+      }
+      try {
+        const reply = z
+          .object({
+            id: z.number().int(),
+            ok: z.boolean(),
+            result: z.unknown().optional(),
+            error: z.string().max(80).optional(),
+          })
+          .parse(JSON.parse(line));
+        const pending = this.pending.get(reply.id);
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        this.pending.delete(reply.id);
+        if (reply.ok) pending.resolve(reply.result);
+        else pending.reject(new AppError(this.errorMessage(reply.error)));
+      } catch {
+        this.close();
+      }
+    });
+    child.stderr.resume(); // Native errors must never be copied into diagnostics.
+    child.on('error', () => this.close());
+    child.on('exit', () => this.close());
+    await this.request('ping');
+    this.available = true;
+  }
+  private errorMessage(code?: string): string {
+    if (code === 'input-already-attempted')
+      return 'Input was already attempted once. Check your destination; use Copy to avoid an automatic duplicate.';
+    if (code === 'choose-target')
+      return 'Click a text field in another application, then use your shortcut.';
+    if (code?.startsWith('clipboard'))
+      return 'The clipboard could not be safely preserved. Use Copy or direct Unicode mode, then retry.';
+    if (code === 'use-clipboard-mode')
+      return 'Direct Unicode mode supports up to 5,000 characters without newlines. Use clipboard paste for this text.';
+    if (code === 'release-modifiers')
+      return 'Release Ctrl, Alt, Shift and Windows keys before inserting.';
+    return 'The original field is unavailable, changed, or protected. Nothing further was inserted. Copy your text or refocus the original field and retry.';
+  }
+  request(
+    command: 'ping' | 'capture' | 'insert' | 'clear',
+    fields: Record<string, unknown> = {},
+  ): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      if (!this.child || this.child.killed) {
+        reject(
+          new AppError(
+            'Windows integration is unavailable. Restart Seyvo; copy-only dictation remains available.',
+          ),
+        );
+        return;
+      }
+      const id = ++this.next;
+      const timer = setTimeout(() => this.close(), 5000);
+      this.pending.set(id, { resolve, reject, timer });
+      this.child.stdin.write(JSON.stringify({ id, command, ...fields }) + '\n', (error) => {
+        if (error) this.close();
+      });
+    });
+  }
+  async capture(allowPractice = false): Promise<Target> {
+    return targetSchema.parse(
+      await this.request('capture', { ownPid: process.pid, allowPractice }),
+    );
+  }
+  async insert(target: Target, text: string, method: 'paste' | 'unicode'): Promise<void> {
+    await this.request('insert', { token: target.token, text, method });
+  }
+  close(): void {
+    const child = this.child;
+    this.child = undefined;
+    this.available = false;
+    if (child && !child.killed) child.kill();
+    for (const task of this.pending.values()) {
+      clearTimeout(task.timer);
+      task.reject(
+        new AppError(
+          'Windows integration stopped responding. Your text is available for recovery.',
+        ),
+      );
+    }
+    this.pending.clear();
+  }
+}

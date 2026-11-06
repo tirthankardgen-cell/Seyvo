@@ -1,0 +1,39 @@
+appId: com.tirthankardgen.seyvo
+productName: Seyvo
+copyright: Copyright © 2026 Tirthankar Dasgupta
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - out/**
+  - package.json
+  - LICENSE
+  - PRIVACY.md
+  - THIRD_PARTY_NOTICES.md
+asar: true
+electronDist: node_modules/electron/dist
+extraResources:
+  - from: native-win/bin/Seyvo.Native.exe
+    to: native/Seyvo.Native.exe
+  - from: assets/icon.png
+    to: assets/icon.png
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icon.ico
+  artifactName: Seyvo-${version}-windows-x64-setup.${ext}
+  requestedExecutionLevel: asInvoker
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  packElevateHelper: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+  runAfterFinish: false
+  deleteAppDataOnUninstall: false
+  include: scripts/installer.nsh
+afterPack: scripts/after-pack.cjs
+publish: null

@@ -1,0 +1,47 @@
+{
+  "readyMilliseconds": 1322,
+  "devicePixelRatio": 1.5,
+  "metrics": [
+    {
+      "type": "Browser",
+      "cpu": 0.05108139721414923,
+      "memoryKiB": 126908
+    },
+    {
+      "type": "GPU",
+      "cpu": 0.0756273109831921,
+      "memoryKiB": 292480
+    },
+    {
+      "type": "Utility",
+      "cpu": 0.0004158812276155017,
+      "memoryKiB": 52884
+    },
+    {
+      "type": "Tab",
+      "cpu": 0.05742216362924216,
+      "memoryKiB": 121508
+    },
+    {
+      "type": "Utility",
+      "cpu": 0.13889204583824583,
+      "memoryKiB": 84952
+    },
+    {
+      "type": "Utility",
+      "cpu": 0.0028618559485837722,
+      "memoryKiB": 116096
+    },
+    {
+      "type": "Tab",
+      "cpu": 0.0038213813865454103,
+      "memoryKiB": 104356
+    },
+    {
+      "type": "Tab",
+      "cpu": 0.0014413164308920067,
+      "memoryKiB": 102888
+    }
+  ],
+  "note": "Single development Electron run after local microphone use; not a general performance claim."
+}

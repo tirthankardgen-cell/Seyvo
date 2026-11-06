@@ -1,0 +1,158 @@
+import { describe, expect, it, vi } from 'vitest';
+import { SessionCoordinator, type SessionPorts } from '../../src/main/session-coordinator';
+import { settingsSchema } from '../../src/shared/contracts';
+import { AppError } from '../../src/shared/errors';
+function fixture() {
+  const settings = settingsSchema.parse({});
+  const provider = {
+    text: '',
+    connect: vi.fn().mockResolvedValue(undefined),
+    send: vi.fn(),
+    finish: vi
+      .fn()
+      .mockResolvedValue({ text: 'Hello नमस्ते 🌍\nSecond paragraph.', complete: true }),
+    close: vi.fn(),
+  };
+  const ports: SessionPorts = {
+    settings: () => settings,
+    key: vi.fn().mockResolvedValue('test-not-real'),
+    provider: () => provider,
+    capture: vi.fn().mockResolvedValue({
+      token: 'private-target',
+      app: 'notepad.exe',
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 600,
+    }),
+    record: vi.fn().mockResolvedValue(undefined),
+    stopRecord: vi.fn().mockResolvedValue(undefined),
+    insert: vi.fn().mockResolvedValue(undefined),
+    copy: vi.fn(),
+    saveHistory: vi.fn().mockResolvedValue(undefined),
+    changed: vi.fn(),
+    overlay: vi.fn(),
+  };
+  return { settings, provider, ports, coordinator: new SessionCoordinator(ports) };
+}
+describe('single session authority', () => {
+  it('refuses a new session until microphone cancellation has finished', async () => {
+    const f = fixture();
+    await f.coordinator.start();
+    let release!: () => void;
+    vi.mocked(f.ports.stopRecord).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const cancelling = f.coordinator.cancel();
+    await expect(f.coordinator.start()).rejects.toThrow('current session');
+    release();
+    await cancelling;
+    expect(f.coordinator.phase).toBe('idle');
+  });
+  it('waits for insertion to settle during shutdown so clipboard restoration can finish', async () => {
+    const f = fixture();
+    let finishInsertion!: () => void;
+    vi.mocked(f.ports.insert).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishInsertion = resolve;
+        }),
+    );
+    await f.coordinator.start();
+    const stopping = f.coordinator.stop();
+    await vi.waitFor(() => expect(f.ports.insert).toHaveBeenCalled());
+    let closed = false;
+    const shutdown = f.coordinator.shutdown().then(() => {
+      closed = true;
+    });
+    await Promise.resolve();
+    expect(closed).toBe(false);
+    finishInsertion();
+    await Promise.all([stopping, shutdown]);
+    expect(closed).toBe(true);
+  });
+  it('captures before mic, inserts only finalized text once, and always keeps uncertain results', async () => {
+    const f = fixture();
+    await f.coordinator.start();
+    expect(f.coordinator.phase).toBe('listening');
+    expect(vi.mocked(f.ports.capture).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(f.ports.record).mock.invocationCallOrder[0]!,
+    );
+    await Promise.all([f.coordinator.stop(), f.coordinator.stop()]);
+    expect(f.ports.insert).toHaveBeenCalledTimes(1);
+    expect(f.coordinator.recovery).toContain('नमस्ते');
+    expect(f.coordinator.message).toContain('may have failed');
+    expect(f.coordinator.microphoneActive).toBe(false);
+    expect(f.provider.close).toHaveBeenCalled();
+    await expect(f.coordinator.start()).rejects.toThrow('dismiss');
+    f.coordinator.dismiss();
+    expect(f.coordinator.recovery).toBe('');
+  });
+  it('does not open microphone in excluded apps', async () => {
+    const f = fixture();
+    f.settings.excludedApps = ['NOTEPAD.exe'];
+    await f.coordinator.start();
+    expect(f.ports.record).not.toHaveBeenCalled();
+    expect(f.provider.connect).not.toHaveBeenCalled();
+    expect(f.coordinator.message).toContain('excluded');
+  });
+  it('cancels pending setup without starting the microphone or accepting stale completion', async () => {
+    const f = fixture();
+    let connected!: () => void;
+    f.provider.connect.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          connected = resolve;
+        }),
+    );
+    const starting = f.coordinator.start();
+    await vi.waitFor(() => expect(f.provider.connect).toHaveBeenCalled());
+    await f.coordinator.cancel();
+    connected();
+    await starting;
+    expect(f.ports.record).not.toHaveBeenCalled();
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    expect(f.coordinator.phase).toBe('idle');
+  });
+  it('never inserts partial output on timeout, empty input, or target failure', async () => {
+    const f = fixture();
+    f.provider.finish.mockResolvedValue({ text: 'Partial', complete: false });
+    await f.coordinator.start();
+    await f.coordinator.stop();
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    expect(f.coordinator.recovery).toBe('Partial');
+    f.coordinator.dismiss();
+    f.provider.finish.mockResolvedValue({ text: '  ', complete: true });
+    await f.coordinator.start();
+    await f.coordinator.stop();
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    f.provider.finish.mockResolvedValue({ text: 'Recover me', complete: true });
+    vi.mocked(f.ports.insert).mockRejectedValue(new AppError('Target changed'));
+    await f.coordinator.start();
+    await f.coordinator.stop();
+    expect(f.coordinator.recovery).toBe('Recover me');
+    expect(f.coordinator.message).toBe('Target changed');
+  });
+  it('local microphone test never loads a key, calls Google, captures a target, or inserts', async () => {
+    const f = fixture();
+    await f.coordinator.start(true);
+    await f.coordinator.stop();
+    expect(f.ports.key).not.toHaveBeenCalled();
+    expect(f.provider.connect).not.toHaveBeenCalled();
+    expect(f.ports.capture).not.toHaveBeenCalled();
+    expect(f.ports.insert).not.toHaveBeenCalled();
+  });
+  it('retains finalized segments on provider failure and refuses late audio', async () => {
+    const f = fixture();
+    await f.coordinator.start();
+    f.provider.text = 'Saved final';
+    await f.coordinator.fail(new AppError('Network lost'));
+    expect(f.coordinator.recovery).toBe('Saved final');
+    expect(
+      f.coordinator.packet({ id: 'old', sequence: 0, pcm: new ArrayBuffer(100), level: 0 }),
+    ).toBe(false);
+  });
+});

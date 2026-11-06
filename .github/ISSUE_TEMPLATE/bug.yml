@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible Seyvo problem without private content.
+body:
+  - type: markdown
+    attributes:
+      value: Never include API keys, private speech, transcripts or clipboard contents. Use private security reporting for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Seyvo version and Windows build
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target executable and microphone type (if relevant)
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected behavior, and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Safe diagnostics from Settings (optional)
