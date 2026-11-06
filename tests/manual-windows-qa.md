@@ -73,6 +73,8 @@ Build `a9280db39247` passed [Windows CI 42309748565](https://github.com/tirthank
 
 An additional test used the installed native helper against the uniquely identified `Seyvo-acceptance-synthetic.txt` Notepad tab. Direct Unicode input did not exactly append the known fixture (22 UTF-16 units received for a 32-unit fixture in the repeat). No other document or clipboard was used, and no Enter was sent. This is a failed compatibility observation, not a Notepad acceptance pass. Clipboard mode there remains untested.
 
+The subsequent fix refuses direct Unicode for Notepad before sending keys. A real Windows test of the compiled helper confirmed the specific refusal and exact unchanged field contents. A broader IME check was investigated and rejected because Windows also reported stock keyboard layouts as IMEs on this host; no general IME rule or input-language change is shipped. Native Windows Forms Unicode/Hindi/emoji and existing safety tests still pass.
+
 ## Release gate
 
 Source and an explicitly labelled unsigned validation prerelease may be shared. Do not promote a stable commercial release until live human speech, relevant target applications, clean-machine installation and the chosen support matrix are accepted, and the owner addresses signing and brand clearance.

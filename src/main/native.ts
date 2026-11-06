@@ -70,6 +70,8 @@ export class NativeBridge {
       return 'The clipboard could not be safely preserved. Use Copy or direct Unicode mode, then retry.';
     if (code === 'use-clipboard-mode')
       return 'Direct Unicode mode supports up to 5,000 characters without newlines. Use clipboard paste for this text.';
+    if (code === 'notepad-use-clipboard')
+      return 'Direct Unicode input is unavailable for Notepad because it can change the text. No input was sent. Use clipboard paste or Copy, then inspect the result.';
     if (code === 'release-modifiers')
       return 'Release Ctrl, Alt, Shift and Windows keys before inserting.';
     return 'The original field is unavailable, changed, or protected. Nothing further was inserted. Copy your text or refocus the original field and retry.';

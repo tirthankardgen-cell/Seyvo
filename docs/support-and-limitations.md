@@ -10,7 +10,7 @@ Requirements: Windows x64 supported by the packaged Electron runtime, microphone
 | Wrong/disconnected mic | Select Windows default in Settings, run Test microphone, then stop and select a discovered input. Device names refresh only during an explicit local test or dictation. A saved input may be listed as unverified until that discovery runs. |
 | Shortcut unavailable | Record another Ctrl+Shift/Alt combination or F6–F12. The previous working registration is retained. |
 | Cannot insert | Check original window/field/caret stayed selected. Protected, elevated, password, read-only, terminal, custom or remote editors may reject input. Copy is the fallback. Do not routinely run Seyvo as administrator. |
-| Incomplete text in Notepad with direct Unicode | This mode did not reproduce the synthetic fixture in the tested Windows 11 Notepad. Inspect the target and recover the complete text from Seyvo. Clipboard mode in Notepad is not yet accepted; do not assume another mode has passed. |
+| Direct Unicode unavailable in Notepad | Seyvo refuses this path before sending keys because the tested Windows 11 Notepad transformed the fixture. Recover the complete text from Seyvo. Clipboard mode there remains unaccepted; inspect the result if you choose paste or Copy. |
 | Clipboard cannot be preserved | Current formats may be outside the safe set or larger than 16 MB. Copy deliberately replaces it; direct Unicode mode supports short single-line text. |
 | Text duplicated after retry | SendInput cannot prove whether the app accepted paste. Always inspect the destination before retrying. |
 | Finalization timeout | Recovery contains committed segments; final words may be missing. Copy them before dismissing. |

@@ -202,6 +202,11 @@ internal static class Program {
     if (method == "unicode") {
       // CR/LF as virtual keys could submit in chat fields. Refuse multiline here.
       if (text.IndexOfAny(new char[] {'\r','\n'}) >= 0 || text.Length > 5000) throw new InvalidOperationException("use-clipboard-mode");
+      // The current Windows 11 Notepad transformed the Unicode fixture in real
+      // acceptance. Refuse this known-incompatible path before any keystrokes;
+      // keep the transcript for recovery rather than changing keyboard settings.
+      if(target.App.Equals("notepad.exe",StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("notepad-use-clipboard");
       List<INPUT> inputs=new List<INPUT>();
       foreach(char c in text) { inputs.Add(Key(0,c,4)); inputs.Add(Key(0,c,6)); }
       Verify(target); target.InputAttempted=true; Send(inputs.ToArray());

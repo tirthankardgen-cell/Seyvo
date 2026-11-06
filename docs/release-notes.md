@@ -10,7 +10,7 @@ The app implements explicit shortcut → recorder/worklet → Google Live Transc
 
 This is an unsigned validation prerelease. Human-spoken English/Hindi/Hinglish, clean-machine installation and the wider physical Windows/target matrix remain acceptance gates. Generated speech through real Google and physical microphone open/stop are distinct tests. No stable commercial readiness is claimed. Do not disable Windows security controls to install it.
 
-Known target limitation: direct Unicode input did not reproduce the test fixture exactly in the tested Windows 11 Notepad. The complete transcript remains available for recovery. Clipboard mode in Notepad is not yet accepted. Windows Forms and an isolated Edge textarea have separate successful native-input observations.
+Known target limitation: direct Unicode input is refused for Notepad because it transformed the fixture in Windows acceptance. The refusal leaves the target unchanged and retains the complete transcript for recovery. Clipboard mode in Notepad is not yet accepted. Windows Forms and an isolated Edge textarea have separate successful native-input observations. Seyvo does not change keyboard layouts or silently switch insertion methods.
 
 Requires Windows x64, microphone, internet and a user-owned Gemini key with access to the transcription model. Google pricing, quotas and data terms apply. MIT permits commercial reuse with notices; trademark clearance, signing and any paid support policy remain owner decisions. There is no Seyvo backend, telemetry, subscription, automatic updater or always-on recording. ARM64 and push-to-talk are not shipped.
 

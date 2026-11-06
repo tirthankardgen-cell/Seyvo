@@ -8,6 +8,8 @@ Show microphone failures on Settings and onboarding, release the hidden recorder
 
 Exclude Electron Vite's generated config loader from Git status so a clean build reports its commit without an incorrect modified suffix.
 
+Refuse direct Unicode input into Notepad before sending keys: the Windows 11 acceptance fixture was transformed there. Preserve the complete transcript and explain clipboard/copy recovery. Do not change the user's input language. Other targets retain the existing field/caret and duplicate-input checks.
+
 ## 0.1.2 — validation
 
 Complete sound cues with Windows playback and preview, an opt-in coding vocabulary preset, three bubble sizes, dictionary editing, and About build/maintainer/privacy/contributor details. Fix clipped captions and add compact layouts for 200% zoom. Reposition the overlay on display changes and invalidate delayed shows after hiding.
