@@ -32,6 +32,7 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:RELEASE_TAG -ne "v$version") { throw 'Tag/version mismatch' }
       - run: npm ci
+      - run: node node_modules/electron/install.js
       - run: npm run check
       - run: npm run test:e2e
       - run: npm audit --audit-level=moderate

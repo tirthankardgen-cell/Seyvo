@@ -54,7 +54,9 @@ export class NativeBridge {
     child.stderr.resume(); // Native errors must never be copied into diagnostics.
     child.on('error', () => this.close());
     child.on('exit', () => this.close());
-    await this.request('ping');
+    // A cold Windows/.NET installation may scan and initialize the executable
+    // before its first response. Keep insertion/capture budgets at five seconds.
+    await this.request('ping', {}, 15000);
     this.available = true;
   }
   private errorMessage(code?: string): string {
@@ -73,6 +75,7 @@ export class NativeBridge {
   request(
     command: 'ping' | 'capture' | 'insert' | 'clear',
     fields: Record<string, unknown> = {},
+    timeoutMs = 5000,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!this.child || this.child.killed) {
@@ -84,7 +87,7 @@ export class NativeBridge {
         return;
       }
       const id = ++this.next;
-      const timer = setTimeout(() => this.close(), 5000);
+      const timer = setTimeout(() => this.close(), timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.child.stdin.write(JSON.stringify({ id, command, ...fields }) + '\n', (error) => {
         if (error) this.close();

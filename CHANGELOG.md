@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — validation
+
+Allow up to 15 seconds for the first native-helper handshake on cold Windows installations; capture and insertion remain bounded at five seconds. CI installs Electron before measuring application startup. This follows an intermittent native-helper availability failure on a hosted runner; it does not relax the native availability assertion.
+
 ## 0.1.0 — development
 
 Initial implementation of the Windows dictation utility: Google Live Transcribe Smart/Verbatim protocol adapter, dedicated PCM recorder, toggle shortcut, nonactivating bubble, target-aware Win32 insertion with clipboard preservation, recovery, DPAPI key storage, local dictionary and encrypted opt-in history.

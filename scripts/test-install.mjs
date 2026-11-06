@@ -1,13 +1,14 @@
 // Destructive only to the disposable .tools/installed application installation.
 // The NSIS policy preserves the user profile and encrypted credentials.
 import { spawn, spawnSync } from 'node:child_process';
-import { access, mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 const target = resolve('.tools/installed');
 const executable = join(target, 'Seyvo.exe');
-const installer = resolve('dist/Seyvo-0.1.0-windows-x64-setup.exe');
+const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const installer = resolve(`dist/Seyvo-${version}-windows-x64-setup.exe`);
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 delete env.ELECTRON_RENDERER_URL;

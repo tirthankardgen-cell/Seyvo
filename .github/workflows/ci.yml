@@ -15,6 +15,7 @@ jobs:
           node-version: 26.13.0
           cache: npm
       - run: npm ci
+      - run: node node_modules/electron/install.js
       - run: npm run check
       - run: npm audit --audit-level=moderate
       - run: npm run scan:secrets

@@ -1,4 +1,4 @@
-Seyvo development validation build.
+Seyvo 0.1.1 Windows validation build. Extends the cold-start native-helper handshake allowance and prepares Electron before the CI application test. Capture/insertion timeouts and security checks are unchanged.
 
 Windows 11 x64 observations: 27 automated unit/integration tests and Electron E2E passed; the packaged application passed real Google transcription and original-field insertion with a generated speech WAV. Native Unicode/multiline clipboard preservation and concurrent clipboard-change checks passed. Install/upgrade/uninstall/reinstall, encrypted-key persistence, startup cleanup, production fuses and full dependency audit were verified.
 
