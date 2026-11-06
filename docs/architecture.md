@@ -37,7 +37,7 @@ The helper runs as the same user, communicates through inherited pipes, and supp
 
 Clipboard insertion snapshots only supported HGLOBAL formats (text/Unicode/locale/DIB/DIBV5/HTML/RTF/PNG) within 16 MB. Unsupported formats cause refusal before mutation. It samples the sequence after CloseClipboard publishes the new data, then checks clipboard owner, sequence, modifiers and target before Ctrl+V. Restoration after 800 ms requires both owner and sequence still to match; a concurrent copy is preserved. Direct Unicode input is limited to single-line text up to 5,000 UTF-16 code units and never synthesizes Enter. A native request has a five-second timeout; the helper is terminated on hangs, invalidating target tokens.
 
-No universal acknowledgment exists for third-party paste. The application always retains recovery and reports uncertainty after attempted input. The user dismisses, copies or explicitly retries after checking for duplicate insertion.
+The first helper handshake has a 15-second allowance for cold .NET/Windows initialization; capture and insertion keep the five-second operation timeout. No universal acknowledgment exists for third-party paste. The application always retains recovery and reports uncertainty after attempted input. The user dismisses, copies or explicitly retries after checking for duplicate insertion.
 
 ## Lifecycle and storage
 
