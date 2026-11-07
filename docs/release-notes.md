@@ -6,6 +6,8 @@ Display fractional RMS microphone levels on a logarithmic scale and keep the loc
 
 Source validation passed typecheck, lint, production build, 50 unit/integration tests and ten Electron scenarios. The recovery regression uses the real main-process handler with synthetic audio/provider events and an owned native target. The QA record separates that coverage from real microphone amplitude measurements and the earlier 0.1.4 provider/target observations. The running 0.1.4 session was preserved at the user's request; an upgrade must not discard its unsaved recovery.
 
+The installer candidate from `a6a0b18ef4af` was built and its matching unpacked production app passed isolated package checks, including microphone selection/open/stop, startup readback, fuses and clean exit. Source/bundle credential scans and dependency audit passed. A 0.1.5 installed upgrade and live Google test remain unperformed; 0.1.4 remains the published prerelease.
+
 Seyvo implements explicit shortcut → recorder/worklet → direct Google Live Transcribe → finalized native text insertion, retaining recovery when insertion cannot be verified. It includes Smart/Verbatim settings, microphone discovery/selection, dictionary, encrypted optional history, tray/startup, sound cues, coding vocabulary and manual release checking. It never submits a field, logs private speech or publishes the user's key.
 
 This is an unsigned validation prerelease. Human-spoken English/Hindi/Hinglish, clean-machine installation and the wider physical Windows/target matrix remain acceptance gates. Generated speech through real Google and physical microphone open/stop are distinct tests. No stable commercial readiness is claimed. Do not disable Windows security controls to install it.
