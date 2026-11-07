@@ -1,105 +1,172 @@
+<div align="center">
+
+<img src="assets/icon.png" alt="Seyvo app icon" width="96" />
+
 # Seyvo
 
-**Speak. Refine. Paste.**
+### Speak. Refine. Paste.
 
-**A free, open-source alternative to the Wispr Flow workflow for Windows, powered by your own Gemini API key.**
+Open-source voice dictation for Windows.<br />
+Your Gemini key. Your applications. No Seyvo subscription.
 
-Seyvo is a free-to-download, open-source Windows voice-dictation app under the [MIT license](LICENSE). Anyone can download and use it, including for commercial purposes. Bring your own Google Gemini API key, press a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
+[![Download for Windows](https://img.shields.io/badge/Download-Windows_x64-2563eb?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe)
+[![MIT license](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)](LICENSE)
+[![Release](https://img.shields.io/badge/Release-0.1.7_prerelease-64748b?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
 
-Contributions are welcome from everyone. Read [CONTRIBUTING.md](CONTRIBUTING.md) and follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating.
+[Get started](#get-started) · [Features](#built-for-your-workflow) · [Privacy](#your-key-your-data) · [Develop](#build-and-contribute) · [Documentation](#documentation)
 
-**0.1.7 validation build:** fixes screenshot/browser clipboard paste, removes the box around the bubble, hides it after finishing, and correctly saves and reads Windows sign-in startup. Two consecutive generated-speech sessions passed through real Google and automatic Windows paste with exact text/HTML clipboard restoration. Source checks include 51 unit/integration tests and all 11 Electron scenarios in Windows CI. Physical microphone discovery/open/stop and installed restart checks also passed. The installer is unsigned; wider acceptance remains open. See the [release record](tests/manual-windows-qa.md).
+</div>
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
+---
 
-Install for your Windows account and follow the setup steps below. **Create a desktop shortcut** and **Run Seyvo** are checked by default; either can be unchecked. Clicking Finish opens Seyvo with the microphone off. This is an evaluation prerelease; it is not a signed, stable commercial release.
+Seyvo lets you dictate into a supported Windows application with a global shortcut. Speak naturally, finish your dictation, and insert the finalized text at your original target—without automatically sending the message. It is a free, MIT-licensed, independently developed alternative to the Wispr Flow workflow, open to personal use, commercial use and community contributions.
 
-![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard-0.1.7.png)
+<p align="center">
+  <img src="docs/assets/dashboard-0.1.7.png" alt="Seyvo dashboard in the installed Windows app, with the microphone off" width="960" />
+  <br />
+  <sub>The actual installed application. Microphone off until you activate it.</sub>
+</p>
 
-## What is implemented
+> [!IMPORTANT]
+> **The app is free; provider usage may cost money.** Bring your own Google Gemini API key. Google's charges, quotas, availability and data terms apply. Audio goes directly to Google during dictation; this is not offline transcription. Sessions have configurable duration limits. [Pricing](https://ai.google.dev/gemini-api/docs/pricing) · [FAQ](docs/faq.md)
 
-- Smart or Verbatim Gemini Live Transcribe, automatic language recognition and vocabulary hints.
-- Toggle shortcut with conflict reporting, real microphone level bubble, tray, pause, close-to-tray and installed startup preference.
-- Original-field verification, Unicode-safe clipboard insertion with conditional restoration, direct single-line Unicode option and recoverable output when uncertain.
-- Encrypted API key storage, local dictionary import/export, encrypted opt-in history and no audio files.
-- Sandboxed Electron UI, bounded streaming, cancellation and privacy-conscious diagnostics.
-- Optional sound cues, coding vocabulary, three bubble sizes, top/bottom/near-caret/custom placement, dictionary editing and About build information.
+## Get started
 
-Seyvo has no subscription, account, telemetry backend or proprietary transcription proxy. **Google API charges, quotas, account geography and [data terms](https://ai.google.dev/gemini-api/terms) apply.** Audio goes to Google during dictation. This is not offline transcription. See [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [privacy](PRIVACY.md).
+| 1 · Install | 2 · Connect | 3 · Dictate |
+| :--- | :--- | :--- |
+| Download the **Windows x64 installer** and install for your account. | Get your key from **[Google AI Studio](https://aistudio.google.com/apikey)**, then select **Save & test** in Seyvo. | Focus a supported text field. Press your shortcut to start, speak, and press it again to finish. |
 
-## Why Seyvo?
+**[Download v0.1.7](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe)** · [Verify SHA256](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
 
-Use voice input in the applications you already work in, with source code you can inspect and change. Seyvo has no app subscription, paid feature tier or account requirement. You control your Gemini key and can contribute fixes, translations, documentation and compatibility reports. Seyvo is an independent project, not a fork of or affiliate of Wispr Flow.
+After saving your key, run **Test microphone**, stop the test, and select your preferred device. Configure your shortcut; the default is **Ctrl + Shift + Space**. **Escape** cancels dictation. Inspect the result before sending it or retrying insertion.
 
-“Free” refers to the application. Google controls API availability, pricing and quotas. Dictation sessions also have configurable duration limits; Seyvo does not promise unlimited sessions or free provider usage. See the [FAQ](docs/faq.md).
+<details>
+<summary><strong>Installation and everyday controls</strong></summary>
 
-## License, cost and support
+- **Create a desktop shortcut** and **Run Seyvo** are checked in the installer by default; either can be unchecked. Finish opens the app with the microphone off.
+- Closing the window keeps Seyvo in the tray by default. Select **Quit Seyvo** to exit.
+- If insertion is blocked or uncertain, open Seyvo to copy or recover the result. Check the target first to avoid duplicates.
+- Starting a new dictation replaces the previous in-memory result. Copy any unsuccessful result you want to keep before starting again.
+- History is off by default. Updates are manual through GitHub Releases; nothing is automatically installed.
 
-- **Free app, commercial use allowed:** Seyvo is MIT-licensed. You may use it at work, modify it, redistribute it or sell copies while preserving the copyright and license notice. Bundled dependencies retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
-- **Bring your own API key:** Google provides transcription and may charge for usage. Downloading Seyvo does not include API credits. Audio is sent directly to Google while dictating; it is not processed offline.
-- **Community support:** [Report a bug or request a feature](https://github.com/tirthankardgen-cell/Seyvo/issues). Include your app version, Windows build and reproducible steps, using synthetic text. Keep keys and private speech out of reports. Use the [security policy](SECURITY.md) for vulnerabilities.
-- **Current release status:** Windows 11 x64 evaluation prerelease, unsigned, with no support SLA. Commercial permission under MIT does not imply enterprise certification or a completed compatibility matrix. See [commercial readiness](docs/commercial-readiness.md) before offering supported deployments.
+</details>
 
-## Build and run
+> [!NOTE]
+> **Code signing is pending.** The SignPath Foundation application has been submitted and acknowledged; review and approval are pending. Current installers are **unsigned evaluation prereleases**. No SignPath sponsorship or signed release is claimed. [Code signing policy](docs/code-signing.md)
 
-Windows x64, Node 26.13.0 LTS (26.x), npm and the Windows .NET Framework C# compiler are required.
+## Built for your workflow
 
-```powershell
-npm ci
-npm run dev
-npm run check
-npm run test:e2e
-npm run dist:win
-```
+| Capability | What you get |
+| :--- | :--- |
+| **Natural dictation** | Smart or Verbatim Gemini transcription, automatic language recognition and vocabulary hints. |
+| **Shortcut control** | Global toggle shortcut, conflict feedback, tray controls and a visible microphone level bubble. |
+| **Careful insertion** | Original-target checks, conditional clipboard restoration, direct single-line Unicode input and recovery when insertion is uncertain. No auto-submit. |
+| **Personal vocabulary** | Dictionary editing, import/export and coding vocabulary support. |
+| **Desktop preferences** | Themes, optional sound cues, bubble sizes and placement, plus a Windows sign-in startup preference. |
+| **Local control** | Encrypted key storage, optional encrypted history, explicit microphone activation and no saved audio files. |
 
-`dist:win` builds a per-user NSIS installer; see [release procedure](docs/release-checklist.md) for signing, install validation, checksums and real acceptance. Current versions are pinned in package.json and package-lock.json. The development test suite does not require a real key; live acceptance does.
+<p align="center">
+  <img src="docs/assets/overlay-0.1.7.png" alt="Transparent Seyvo microphone bubble preview from the installed application" />
+  <br />
+  <sub>A compact microphone bubble keeps the dictation state visible.</sub>
+</p>
 
-## Use
-
-1. Launch Seyvo. Get your own key from [Google AI Studio](https://aistudio.google.com/apikey), then **Save & test**. This verifies access to the exact transcription model without opening your microphone.
-2. With Windows default selected, run **Test microphone** to discover inputs. Stop the test, choose your preferred microphone and test it locally. Configure a safe shortcut; default is **Ctrl + Shift + Space**.
-3. Put the caret in a supported field in another application. Press the shortcut, speak, and press it again to finish. Escape cancels.
-4. Check the target. If input was blocked or cannot be confirmed, open Seyvo from the tray to copy or retry. Check for existing text before retrying. Seyvo never sends Enter.
-5. Press the shortcut again for a fresh dictation. It replaces the last in-memory result without replaying it. Copy any unsuccessful result first if you need to keep it; history stays off unless enabled.
-
-Closing the window keeps the tray app running by default; choose **Quit Seyvo** to exit. History is off until enabled. Manual updates use the real GitHub Releases page; no updates are installed automatically.
+<details>
+<summary><strong>See the onboarding screen</strong></summary>
 
 ![Fresh-profile onboarding in the installed Windows app](docs/assets/onboarding.png)
 
-![Transparent microphone bubble preview captured from the installed app](docs/assets/overlay-0.1.7.png)
+</details>
 
-## Compatibility and limitations
+## Your key, your data
 
-Initial development targets Windows 11 x64; the full [Windows matrix](tests/manual-windows-qa.md) records what was actually tested. Windows 10 support requires runtime and installation validation. ARM64 and push-to-talk are not shipped. No guarantee for administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Insertion cannot universally be acknowledged by other apps, so Seyvo keeps the transcript available until the next dictation, Dismiss or exit.
+**No Seyvo account, subscription, telemetry backend or proprietary transcription proxy.** You supply your own key, and the installed app connects directly to Google while you dictate.
 
-Installed single-line Unicode input has also passed in Edge, Word, VS Code and the logged-out ChatGPT web composer. The [target acceptance record](docs/target-acceptance-0.1.4.md) lists the exact versions/configurations, unsafe-target refusals and remaining clipboard/variant checks.
+| Area | Behavior |
+| :--- | :--- |
+| Microphone | Opens on explicit activation. Local microphone testing is available before dictation. |
+| Audio | Streamed to Google during dictation; no audio files saved by Seyvo. Google's [data terms](https://ai.google.dev/gemini-api/terms) apply. |
+| API key | Encrypted locally using Windows protection. Same-user malware and OS compromise remain outside that protection boundary. |
+| History | Optional, encrypted and off by default. |
+| Clipboard | Restoration is conditional on unchanged clipboard state. Temporary text requests exclusion from Windows history/cloud sync; other clipboard readers may still observe it. |
 
-Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. Clipboard paste passed with Hindi, emoji and multiple paragraphs in an owned Notepad document. Inspect results in your application before retrying.
+Read the **[privacy policy](PRIVACY.md)**, [security policy](SECURITY.md) and [threat model](docs/privacy-threat-model.md) for the complete boundaries.
 
-Temporary paste text requests exclusion from Windows clipboard history and cloud sync; other clipboard readers may still observe it. Supported images, text/HTML, Chromium metadata and privacy flags are restored when unchanged. Unsupported or unavailable formats and snapshots over 64 MiB cause safe refusal. Same-user malware may access secrets protected for that Windows account. See [support](docs/support-and-limitations.md), [security](SECURITY.md), [architecture](docs/architecture.md) and [threat model](docs/privacy-threat-model.md).
+## Release and compatibility
 
-## Commercial use and project governance
+**Current download: v0.1.7 · Windows x64 · unsigned prerelease.** This release improves screenshot/browser clipboard restoration, the transparent microphone bubble and Windows sign-in startup behavior.
 
-[MIT](LICENSE) permits commercial use, modification and distribution with notice preservation. Google service terms are separate. Seyvo is independent and not affiliated with Google or Wispr Flow. It is an open-source alternative workflow, with original artwork and no copied competitor assets. The working name still needs [trademark clearance](docs/naming-and-trademark-clearance.md) before commercial launch. No support SLA is offered.
+| Area | Recorded status |
+| :--- | :--- |
+| Initial platform | Windows 11 x64. Windows 10 requires further runtime and installation validation. ARM64, macOS and Linux application support are not shipped. |
+| Windows acceptance | Installed human English, Hindi and Hinglish checks passed with exact paste and clipboard restoration. Multilingual multiline paste was also checked in Edge, Word and VS Code. |
+| Automated coverage | Current source records 55 automated tests and 11 Electron scenarios. Mocked tests, real provider observations and installed-app checks are documented separately. |
+| Signing | SignPath Foundation review pending; current downloads are unsigned. |
+| Further acceptance | Clean-machine, physical and accessibility coverage remain open, alongside an intermittent shutdown-test timeout. |
 
-See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [third-party notices](THIRD_PARTY_NOTICES.md) and [release checklist](docs/release-checklist.md). Repository screenshots are captured from the actual Windows application.
+[Windows QA record](tests/manual-windows-qa.md) · [0.1.7 target acceptance](docs/target-acceptance-0.1.7.md) · [Security review](docs/security-review-0.1.7.md) · [Performance measurements](docs/performance.md)
 
-The [commercial launch notes](docs/commercial-readiness.md) separate MIT reuse rights from support, signing, provider terms and trademark decisions.
+<details>
+<summary><strong>Supported boundaries and insertion limitations</strong></summary>
 
-Our [Code signing policy](docs/code-signing.md) explains the current unsigned status and strict publisher/timestamp verification. The maintainer submitted the free SignPath Foundation application and received an acknowledgment. Review and approval are pending; no sponsorship or signed release is claimed.
+Seyvo cannot guarantee insertion into administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Another application's acceptance cannot universally be confirmed. The last result stays available until the next dictation, Dismiss or exit. Push-to-talk is not shipped.
 
-The [0.1.7 security review](docs/security-review-0.1.7.md) covers all changes through the installed release and documents the subsequent test-diagnostic privacy fix.
+Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. Clipboard paste passed with Hindi, emoji and multiple paragraphs in an owned Notepad document. Inspect results before retrying.
 
-Installed acceptance passed the specified human English, Hindi and Hinglish checks, matching the prompts and verifying exact paste with clipboard restoration. Those language checks are complete. [0.1.7 target tests](docs/target-acceptance-0.1.7.md) also cover multilingual multiline paste in Edge, Word and VS Code. The [QA record](tests/manual-windows-qa.md) includes attempt-specific limits; the current source has 55 automated tests and 11 Electron scenarios. Signing, clean-machine/physical/accessibility acceptance and an intermittent shutdown-test timeout remain separate open items.
+Supported clipboard images, text/HTML, Chromium metadata and privacy flags are restored when unchanged. Unsupported or unavailable formats and snapshots over 64 MiB cause safe refusal.
 
-The [requirement evidence ledger](docs/requirements-evidence.md) maps the supplied specification to code, tests, observations and remaining acceptance.
+See [support and limitations](docs/support-and-limitations.md) for details.
 
-The [0.1.4 security review and remediation](docs/security-review-0.1.4.md) records the fixed cancellation race. [Packaged performance measurements](docs/performance.md) document the method and its limits.
+</details>
+
+## Build and contribute
+
+Contributions are welcome: bug fixes, tests, documentation, accessibility improvements and Windows compatibility reports all help.
+
+**Prerequisites:** Windows x64, Node **26.13.0 or compatible newer 26.x**, npm, and the Windows .NET Framework C# compiler. Dependency versions are pinned in the committed lockfile.
+
+```powershell
+# Install locked dependencies
+npm ci
+
+# Start development
+npm run dev
+```
+
+| Command | Purpose |
+| :--- | :--- |
+| `npm run check` | Type checking, linting, unit/integration tests and production build. |
+| `npm run test:e2e` | Electron UI scenarios. |
+| `npm run dist:win` | Build the per-user Windows x64 NSIS installer. |
+
+Development tests do not require a real Google key; live provider acceptance does. Windows native builds and full application validation require Windows. Read the [contribution guide](CONTRIBUTING.md), [agent instructions](AGENTS.md) and [release procedure](docs/release-checklist.md) before making changes.
+
+**[Report a bug](https://github.com/tirthankardgen-cell/Seyvo/issues/new?template=bug.yml)** · **[Suggest a feature](https://github.com/tirthankardgen-cell/Seyvo/issues/new?template=feature.yml)** · **[Contribute](CONTRIBUTING.md)**
+
+Include your app version, Windows build and reproducible steps using synthetic examples. Keep API keys, private audio, transcripts and clipboard contents out of reports. Report vulnerabilities through [SECURITY.md](SECURITY.md). Participation follows our [Code of Conduct](CODE_OF_CONDUCT.md); community support has no response-time SLA.
 
 ## Documentation
 
-- [Frequently asked questions](docs/faq.md): cost, privacy, compatibility and commercial use.
-- [Support and limitations](docs/support-and-limitations.md): troubleshooting and supported behavior.
-- [Architecture](docs/architecture.md) and [privacy policy](PRIVACY.md): how data moves through the app.
-- [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md) and [security reporting](SECURITY.md): participate responsibly.
-- [Changelog](CHANGELOG.md), [release checklist](docs/release-checklist.md) and [commercial readiness](docs/commercial-readiness.md): release history and launch requirements.
+| For users | For contributors | For distributors |
+| :--- | :--- | :--- |
+| [FAQ](docs/faq.md) | [Architecture](docs/architecture.md) | [Commercial readiness](docs/commercial-readiness.md) |
+| [Privacy policy](PRIVACY.md) | [Contribution guide](CONTRIBUTING.md) | [Code signing](docs/code-signing.md) |
+| [Support and limitations](docs/support-and-limitations.md) | [Requirements and evidence](docs/requirements-evidence.md) | [Release checklist](docs/release-checklist.md) |
+| [Changelog](CHANGELOG.md) | [Security review](docs/security-review-0.1.7.md) | [Third-party notices](THIRD_PARTY_NOTICES.md) |
+
+## License and commercial use
+
+**[MIT licensed](LICENSE). Free to download. Commercial use permitted.** You may use Seyvo at work, modify it, redistribute it or sell copies while preserving the required copyright and license notice. Bundled dependencies retain their own licenses; Google service terms remain separate.
+
+Seyvo is independently developed and is not affiliated with Google or Wispr Flow. The working name still requires [trademark clearance](docs/naming-and-trademark-clearance.md). Review [commercial readiness](docs/commercial-readiness.md) before offering supported deployments; an open-source license does not establish production certification.
+
+---
+
+<div align="center">
+
+<strong>Seyvo · Speak. Refine. Paste.</strong><br />
+Built for Windows. Open for everyone to contribute.
+
+[Download](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7) · [Source](https://github.com/tirthankardgen-cell/Seyvo) · [Issues](https://github.com/tirthankardgen-cell/Seyvo/issues)
+
+</div>
