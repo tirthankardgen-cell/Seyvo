@@ -36,10 +36,11 @@ test('shortcut capture confirms persisted saves and keeps the active binding aft
     await expect(page.getByRole('button', { name: 'Save shortcut', exact: true })).toBeDisabled();
     await capture('F6');
     await page.getByRole('button', { name: 'Save shortcut', exact: true }).click();
+    await expect(page.getByTestId('shortcut-status')).toContainText('Shortcut saved.');
+    await expect(page.getByTestId('shortcut-status')).toContainText('Saved shortcut (paused): F6');
     await expect(page.getByRole('button', { name: 'Save shortcut', exact: true })).toBeDisabled();
-    expect((await page.evaluate(() => window.seyvo.updateSettings({ paused: false }))).ok).toBe(
-      true,
-    );
+    const resumed = await page.evaluate(() => window.seyvo.updateSettings({ paused: false }));
+    expect(resumed.ok, resumed.ok ? '' : resumed.error).toBe(true);
     await expect(page.getByTestId('shortcut-status')).toContainText('Active shortcut: F6');
     // F12 may already be reserved by Windows. Otherwise occupy it in this
     // fixture; either case must refuse the rebind without losing F6.
