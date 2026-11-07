@@ -4,6 +4,8 @@ Fix the repeat-dictation workflow. After Windows input is sent, Seyvo returns to
 
 Shortcut saves now show confirmation, disable Save after success and display the active or paused binding. Invalid combinations receive guidance; a conflict keeps the previous working shortcut and explains the refusal. Microphone levels retain fractional RMS feedback. Error and recovery bubbles stay visible until handled, while local microphone tests and no-speech results have distinct labels.
 
+Create a desktop shortcut and Run Seyvo are selected by default in interactive setup. Either option can be unchecked. The app opens when setup finishes with Run selected; the microphone stays off until explicit activation.
+
 Source validation passed typecheck, lint, production build, 51 unit/integration tests and 11 Electron scenarios. The repeat-session regression uses the real coordinator and Windows input with synthetic capture/provider events. The release record separates these tests from installed live-Google and physical-microphone observations. No test records credentials, private transcripts or audio.
 
 This is an unsigned prerelease, not a stable commercial launch. Wider English/Hindi/Hinglish, fresh-machine and physical Windows compatibility checks, signing and owner-controlled brand/provider launch decisions remain gates. “Text sent” describes the Windows input attempt; another application's acceptance is not universally observable. Check the destination before retrying. Seyvo never submits a field or silently switches insertion methods.
