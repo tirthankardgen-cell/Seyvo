@@ -10,7 +10,7 @@ A Windows voice-dictation utility with your own Google Gemini API key. Use a glo
 
 Install for your Windows account, launch Seyvo, and follow the setup steps below. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
-![Fresh-profile onboarding in the installed Windows app](docs/assets/onboarding.png)
+![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard.png)
 
 ## What is implemented
 
@@ -45,6 +45,8 @@ npm run dist:win
 4. Check the target. If input was blocked or cannot be confirmed, open Seyvo from the tray to copy or retry. Check for existing text before retrying. Seyvo never sends Enter.
 
 Closing the window keeps the tray app running by default; choose **Quit Seyvo** to exit. History is off until enabled. Manual updates use the real GitHub Releases page; no updates are installed automatically.
+
+![Fresh-profile onboarding in the installed Windows app](docs/assets/onboarding.png)
 
 ![Nonactivating microphone bubble captured from the running app](docs/assets/overlay.png)
 
