@@ -60,7 +60,7 @@ async function close() {
 async function change(enabled) {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const toggle = page.getByLabel('Launch when I sign in', { exact: true });
-  await toggle.setChecked(enabled);
+  if ((await toggle.isChecked()) !== enabled) await toggle.click();
   await expect
     .poll(async () => (await page.evaluate(() => window.seyvo.status())).startup)
     .toBe(enabled);

@@ -142,6 +142,10 @@ async function run(): Promise<void> {
   let lastTrayState = '';
   let overlayTimer: NodeJS.Timeout | undefined;
   const loginItemOptions = { path: process.execPath, args: ['--startup'] };
+  function startupEnabled(): boolean {
+    const item = app.getLoginItemSettings(loginItemOptions);
+    return item.openAtLogin && item.executableWillLaunchAtLogin;
+  }
   function status(): Status {
     return {
       phase: coordinator.phase,
@@ -157,7 +161,7 @@ async function run(): Promise<void> {
       targetApp: coordinator.targetApp,
       shortcutRegistered: Boolean(shortcuts.current),
       nativeAvailable: native.available,
-      startup: app.getLoginItemSettings(loginItemOptions).openAtLogin,
+      startup: startupEnabled(),
       startupAvailable: app.isPackaged,
       version: app.getVersion(),
       buildHash: __SEYVO_BUILD__,
@@ -470,7 +474,7 @@ async function run(): Promise<void> {
     if (!app.isPackaged)
       throw new AppError('Startup registration is available after installing Seyvo.');
     app.setLoginItemSettings({ openAtLogin: enabled, ...loginItemOptions });
-    const actual = app.getLoginItemSettings(loginItemOptions).openAtLogin;
+    const actual = startupEnabled();
     if (actual !== enabled)
       throw new AppError(
         'Windows did not accept the startup change. Check Startup Apps in Windows Settings.',

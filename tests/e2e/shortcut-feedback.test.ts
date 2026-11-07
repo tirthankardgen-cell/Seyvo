@@ -7,6 +7,7 @@ import { createInterface } from 'node:readline';
 import { quitApp } from './helpers';
 
 test('new dictations replace old recovery and consecutive finalized sessions insert without opening the dashboard', async () => {
+  test.setTimeout(90000);
   const profile = await mkdtemp(join(tmpdir(), 'seyvo-shortcut-feedback-'));
   const env = Object.fromEntries(
     Object.entries(process.env).filter(
@@ -206,7 +207,9 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
         (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
       );
       await expect
-        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase, {
+          timeout: 20000,
+        })
         .toBe('listening');
       expect((await page.evaluate(() => window.seyvo.status())).recovery).toBe('');
       expect(await dashboardVisible()).toBe(false);

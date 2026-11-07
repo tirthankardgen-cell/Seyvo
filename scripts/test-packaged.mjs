@@ -64,12 +64,12 @@ try {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const startupToggle = page.getByLabel('Launch when I sign in', { exact: true });
   try {
-    await startupToggle.check();
+    if (!(await startupToggle.isChecked())) await startupToggle.click();
     await expect(startupToggle).toBeChecked();
     await expect
       .poll(async () => (await page.evaluate(() => window.seyvo.status())).startup)
       .toBe(true);
-    await startupToggle.uncheck();
+    await startupToggle.click();
     await expect(startupToggle).not.toBeChecked();
     await expect
       .poll(async () => (await page.evaluate(() => window.seyvo.status())).startup)
