@@ -115,7 +115,7 @@ async function run(): Promise<void> {
   });
   const shortcuts = new Shortcuts(globalShortcut, () => {
     delayedAbort?.abort();
-    void act(coordinator.phase === 'listening' ? 'stop' : 'start').catch((error) => report(error));
+    void act(coordinator.phase === 'listening' ? 'stop' : 'start').catch(reportActivationError);
   });
   try {
     shortcuts.set(storage.settings.shortcut, storage.settings.paused);
@@ -173,7 +173,9 @@ async function run(): Promise<void> {
             label: snapshot.phase === 'listening' ? 'Stop dictation' : 'Start dictation',
             enabled: snapshot.phase === 'listening' || (!coordinator.busy && !snapshot.recovery),
             click: () => {
-              void act(snapshot.phase === 'listening' ? 'stop' : 'start').catch(report);
+              void act(snapshot.phase === 'listening' ? 'stop' : 'start').catch(
+                reportActivationError,
+              );
             },
           },
           {
@@ -225,6 +227,17 @@ async function run(): Promise<void> {
   function report(error: unknown): void {
     coordinator.message = publicError(error);
     publish();
+  }
+  async function reportActivationError(error: unknown): Promise<void> {
+    // Keep the original recovery reason (for example a provider timeout).
+    // A rejected shortcut must remain visible even with the dashboard hidden.
+    if (!coordinator.recovery) {
+      if (!coordinator.busy && coordinator.phase !== 'inserting') coordinator.phase = 'error';
+      report(error);
+    }
+    if (!coordinator.busy && coordinator.phase !== 'inserting') {
+      await windows.showDashboard().then(publish).catch(report);
+    }
   }
   async function updateSettings(input: unknown) {
     if (settingsBusy || keyBusy) throw new AppError('Another settings operation is in progress.');

@@ -39,3 +39,9 @@ The 0.1.4 audit closes the near-caret/custom placement gap. It adds native caret
 Live testing exposed and fixed three integration issues: CommonJS WebSocket import interop; EXDEV during same-directory AppData renames (now a flushed, checksummed recovery journal); and the transcription service's generationComplete signal without optional finished/turnComplete fields. Explicit activityStart/activityEnd boundaries follow Google's current manual-VAD protocol. A subsequent real clipboard test identified sequence publication after CloseClipboard; the helper now samples afterward and also checks ownership.
 
 No stable-release or complete compatibility claim follows from these results. Use `tests/manual-windows-qa.md` and `docs/release-checklist.md` as the release record.
+
+## Microphone and shortcut follow-up
+
+The user's installed 0.1.4 session entered recovery after a provider finalization timeout. Subsequent shortcut activation was received but refused, with its message hidden in the closed dashboard. Preserve that in-memory result as requested. Fix blocked-activation visibility, recovery guidance and the redacted bubble's state indication. Make low microphone amplitudes visible without altering audio; retain local-test peak feedback. Verify with a main-process shortcut/loopback-provider Electron regression, the core gate, full E2E and an isolated packaged smoke test before offering the new installer. Keep real microphone observations separate from synthetic-provider coverage and leave provider completion/human recognition unclaimed.
+
+Source verification: 50 unit/integration tests, typecheck, lint/build and all 10 Electron scenarios passed. The original process and recovery are retained; installing over that running session awaits the user's deliberate handling of its words.

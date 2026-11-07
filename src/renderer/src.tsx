@@ -9,6 +9,7 @@ import type {
 } from '../shared/contracts';
 import { brand } from '../shared/brand';
 import { codingVocabulary } from '../shared/vocabulary';
+import { audioLevel } from '../shared/audio-level';
 import './styles.css';
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -30,19 +31,21 @@ function Wave({
   reduced: boolean;
   dots?: boolean;
 }) {
+  const measured = audioLevel(level);
   return (
     <div
       className={`wave ${dots ? 'dots' : ''}`}
-      aria-label={`Microphone level ${Math.round(level * 100)} percent`}
+      aria-label={`Microphone level ${measured.label} RMS`}
+      title={`Microphone level ${measured.label} RMS`}
     >
       {Array.from({ length: 11 }, (_, i) => (
         <i
           key={i}
           style={{
-            opacity: dots ? 0.25 + Math.min(0.75, level * 6) : 1,
+            opacity: dots ? 0.25 + measured.scale * 0.75 : 1,
             height: reduced
-              ? 8
-              : 5 + Math.min(1, level * 6) * (12 + 28 * (1 - Math.abs(i - 5) / 6)),
+              ? 5 + measured.scale * 28
+              : 5 + measured.scale * (12 + 28 * (1 - Math.abs(i - 5) / 6)),
           }}
         />
       ))}
@@ -155,8 +158,22 @@ function App() {
           <Mark small />
           <Wave level={status.level} reduced={s.reducedMotion} dots={s.waveform === 'dots'} />
           <div>
-            <strong>{active ? title : status.recovery ? 'Check your text' : 'Mic off'}</strong>
-            <small>{status.microphoneActive ? time : 'Seyvo'}</small>
+            <strong>
+              {active
+                ? title
+                : status.phase === 'recovery'
+                  ? 'Check your text'
+                  : status.phase === 'error'
+                    ? 'Needs attention'
+                    : 'Mic off'}
+            </strong>
+            <small>
+              {status.microphoneActive
+                ? time
+                : ['error', 'recovery'].includes(status.phase)
+                  ? 'Open Seyvo'
+                  : 'Seyvo'}
+            </small>
           </div>
           {s.captions && status.interim && <p className="caption">{status.interim}</p>}
         </div>
@@ -236,7 +253,7 @@ function App() {
       <div className="mic-test">
         <Wave level={status.level} reduced={s.reducedMotion} />
         <button
-          disabled={busy || (active && status.phase !== 'listening')}
+          disabled={busy || Boolean(status.recovery) || (active && status.phase !== 'listening')}
           onClick={() =>
             void run(window.seyvo.action(status.microphoneActive ? 'micStop' : 'micTest'))
           }
@@ -247,6 +264,11 @@ function App() {
       <p className="hint">
         A 15-second local level test. Nothing is sent to Google. Device names refresh during testing
         or dictation. After connecting a new input, test Windows default, stop, then choose it.
+      </p>
+      <p className="hint" role="status">
+        {status.microphoneActive
+          ? `Input level: ${audioLevel(status.level).label} RMS`
+          : status.message}
       </p>
     </>
   );
@@ -427,6 +449,16 @@ function App() {
           </span>
         </header>
         <main>
+          {status.recovery && (
+            <div className="notice" role="status">
+              <span>
+                A previous transcript is waiting. Copy it if needed, then Dismiss to record again.
+              </span>
+              {page !== 'Home' && (
+                <button onClick={() => setPage('Home')}>View recovered text</button>
+              )}
+            </div>
+          )}
           {(error || status.phase === 'error') && (
             <div className="notice error" role="alert">
               <span>{error || status.message}</span>

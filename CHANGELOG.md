@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 — validation
+
+Bring Seyvo into view when a shortcut cannot start because a transcript is waiting or a key is missing. Preserve the original recovery reason and words. Show recovery instructions on every dashboard tab, disable the unavailable local test while recovery is pending, and make the privacy-filtered bubble indicate that text needs attention.
+
+Show measured microphone amplitude on a logarithmic display scale, with fractional RMS percentages instead of rounding quiet input to zero. Keep the local test's measured peak after stopping and give conditional guidance for very quiet input. This changes feedback only; it does not amplify audio or change Google finalization behavior.
+
 ## 0.1.4 — validation
 
 Add experimental near-caret and custom percentage-based bubble placement, with work-area bounds, above-caret placement near the bottom edge and a bottom fallback when caret geometry is unavailable. Native capture obtains only caret rectangles; it never reads field text. Add a microphone-free bubble preview that cannot hide a newer recording.

@@ -255,6 +255,22 @@ describe('single session authority', () => {
     expect(f.ports.capture).not.toHaveBeenCalled();
     expect(f.ports.insert).not.toHaveBeenCalled();
   });
+  it('retains a quiet local test peak after stopping and resets it for the next test', async () => {
+    const f = fixture();
+    await f.coordinator.start(true);
+    const id = vi.mocked(f.ports.record).mock.calls[0]![0];
+    f.coordinator.packet({ id, sequence: 0, pcm: new ArrayBuffer(3200), level: 0.0047 });
+    f.coordinator.packet({ id, sequence: 1, pcm: new ArrayBuffer(3200), level: 0 });
+    await f.coordinator.stop();
+    expect(f.coordinator.message).toContain('0.47% RMS');
+    expect(f.coordinator.message).toContain('If you spoke');
+    expect(f.coordinator.level).toBe(0);
+    expect(f.coordinator.microphoneActive).toBe(false);
+    expect(f.provider.send).not.toHaveBeenCalled();
+    await f.coordinator.start(true);
+    await f.coordinator.stop();
+    expect(f.coordinator.message).toContain('Peak input: 0% RMS');
+  });
   it('retains finalized segments on provider failure and refuses late audio', async () => {
     const f = fixture();
     await f.coordinator.start();

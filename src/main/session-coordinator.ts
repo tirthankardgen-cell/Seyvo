@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { AudioPacket, Phase, Settings } from '../shared/contracts';
 import { AppError, publicError } from '../shared/errors';
+import { audioLevel } from '../shared/audio-level';
 import type { Target } from './native';
 import type { TranscriptionProvider } from './transcription/provider';
 
@@ -36,6 +37,7 @@ export class SessionCoordinator {
     started: number;
     sequence: number;
     local: boolean;
+    peakLevel: number;
   };
   private recoveryTarget?: Target;
   // Delivery remains cancellable after microphone/provider cleanup, including
@@ -67,6 +69,7 @@ export class SessionCoordinator {
       started: Date.now(),
       sequence: -1,
       local,
+      peakLevel: 0,
     } as NonNullable<typeof this.session>;
     this.session = current;
     this.interim = '';
@@ -155,6 +158,7 @@ export class SessionCoordinator {
     }
     current.sequence = packet.sequence;
     this.level = packet.level;
+    current.peakLevel = Math.max(current.peakLevel, packet.level);
     try {
       if (!current.local) current.provider?.send(packet.pcm, packet.sequence);
       this.ports.changed();
@@ -177,7 +181,10 @@ export class SessionCoordinator {
       if (!current.local && current.settings.soundCues) this.ports.cue('stop');
       if (current.local) {
         await this.cleanup(current);
-        this.change('idle', 'Microphone test finished. No audio was uploaded.');
+        this.change(
+          'idle',
+          `Microphone test finished. Peak input: ${audioLevel(current.peakLevel).label} RMS. ${current.peakLevel < 0.005 ? 'Very quiet input. If you spoke, check Windows input settings or try another microphone. ' : ''}No audio was uploaded.`,
+        );
         return;
       }
       const final = await current.provider!.finish();
