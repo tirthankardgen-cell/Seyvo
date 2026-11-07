@@ -2,6 +2,8 @@
 
 **Speak. Refine. Paste.**
 
+**A free, open-source alternative to the Wispr Flow workflow for Windows, powered by your own Gemini API key.**
+
 Seyvo is a free-to-download, open-source Windows voice-dictation app under the [MIT license](LICENSE). Anyone can download and use it, including for commercial purposes. Bring your own Google Gemini API key, press a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
 
 Contributions are welcome from everyone. Read [CONTRIBUTING.md](CONTRIBUTING.md) and follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating.
@@ -24,6 +26,19 @@ Install for your Windows account and follow the setup steps below. **Create a de
 - Optional sound cues, coding vocabulary, three bubble sizes, top/bottom/near-caret/custom placement, dictionary editing and About build information.
 
 Seyvo has no subscription, account, telemetry backend or proprietary transcription proxy. **Google API charges, quotas, account geography and [data terms](https://ai.google.dev/gemini-api/terms) apply.** Audio goes to Google during dictation. This is not offline transcription. See [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [privacy](PRIVACY.md).
+
+## Why Seyvo?
+
+Use voice input in the applications you already work in, with source code you can inspect and change. Seyvo has no app subscription, paid feature tier or account requirement. You control your Gemini key and can contribute fixes, translations, documentation and compatibility reports. Seyvo is an independent project, not a fork of or affiliate of Wispr Flow.
+
+“Free” refers to the application. Google controls API availability, pricing and quotas. Dictation sessions also have configurable duration limits; Seyvo does not promise unlimited sessions or free provider usage. See the [FAQ](docs/faq.md).
+
+## License, cost and support
+
+- **Free app, commercial use allowed:** Seyvo is MIT-licensed. You may use it at work, modify it, redistribute it or sell copies while preserving the copyright and license notice. Bundled dependencies retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+- **Bring your own API key:** Google provides transcription and may charge for usage. Downloading Seyvo does not include API credits. Audio is sent directly to Google while dictating; it is not processed offline.
+- **Community support:** [Report a bug or request a feature](https://github.com/tirthankardgen-cell/Seyvo/issues). Include your app version, Windows build and reproducible steps, using synthetic text. Keep keys and private speech out of reports. Use the [security policy](SECURITY.md) for vulnerabilities.
+- **Current release status:** Windows 11 x64 evaluation prerelease, unsigned, with no support SLA. Commercial permission under MIT does not imply enterprise certification or a completed compatibility matrix. See [commercial readiness](docs/commercial-readiness.md) before offering supported deployments.
 
 ## Build and run
 
@@ -74,3 +89,11 @@ The [commercial launch notes](docs/commercial-readiness.md) separate MIT reuse r
 The [requirement evidence ledger](docs/requirements-evidence.md) maps the supplied specification to code, tests, observations and remaining acceptance.
 
 The [0.1.4 security review and remediation](docs/security-review-0.1.4.md) records the fixed cancellation race. [Packaged performance measurements](docs/performance.md) document the method and its limits.
+
+## Documentation
+
+- [Frequently asked questions](docs/faq.md): cost, privacy, compatibility and commercial use.
+- [Support and limitations](docs/support-and-limitations.md): troubleshooting and supported behavior.
+- [Architecture](docs/architecture.md) and [privacy policy](PRIVACY.md): how data moves through the app.
+- [Contributing](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md) and [security reporting](SECURITY.md): participate responsibly.
+- [Changelog](CHANGELOG.md), [release checklist](docs/release-checklist.md) and [commercial readiness](docs/commercial-readiness.md): release history and launch requirements.

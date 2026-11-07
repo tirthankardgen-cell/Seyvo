@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an improvement to the Windows dictation workflow.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What task is difficult today?
+      description: Describe the workflow and relevant Windows application. Use synthetic examples without private content.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain the expected result and any alternatives you have tried.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Compatibility and privacy considerations
+      description: Note relevant Windows versions, accessibility needs, or implications for microphone use and provider traffic.

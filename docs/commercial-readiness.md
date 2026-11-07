@@ -14,3 +14,11 @@ The current deliverable is an unsigned Windows x64 validation build. Its real pr
 6. Attach exact checksums, license inventory, SBOM, release notes and tested compatibility information to each release. Manual updates open the fixed GitHub Releases page; no automatic updater is shipped.
 
 The code does not require a paid license server or an artificial feature restriction for commercial reuse. A future business model is an owner decision and must not silently change BYOK privacy promises or introduce hidden services.
+
+## Reuse and distribution checklist
+
+- Keep the MIT copyright and permission notice with copies or substantial portions of Seyvo. MIT permits proprietary modifications and paid redistribution; it does not require publishing your modifications.
+- Preserve applicable third-party notices and review the exact dependencies you distribute. The project license does not replace their licenses or Google's service terms.
+- Identify your own distributor and support terms. Do not imply endorsement by the original maintainer or Google, or represent the working brand as a cleared trademark.
+- Describe provider charges, direct audio transmission, supported Windows versions, signature status and known limitations accurately to customers.
+- If you offer paid services, publish your actual prices, support scope, privacy practices and applicable purchase/refund terms before accepting payments. This repository does not currently offer a paid support contract.
