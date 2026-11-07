@@ -6,13 +6,13 @@ Seyvo is a free-to-download, open-source Windows voice-dictation app under the [
 
 Contributions are welcome from everyone. Read [CONTRIBUTING.md](CONTRIBUTING.md) and follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating.
 
-**0.1.6 validation build:** shortcut saves now show confirmation, and the next dictation starts fresh without dismissing old results. The installed app passed two consecutive generated-speech sessions through real Google and native Windows insertion, 51 unit/integration tests, 11 Electron scenarios and Windows CI. Physical microphone discovery/selection/open/stop also passed; the user reported successful human dictation separately. The installer is unsigned, and wider acceptance remains open. See the [release record](tests/manual-windows-qa.md).
+**0.1.7 validation build:** fixes screenshot/browser clipboard paste, removes the box around the bubble, hides it after finishing, and correctly saves and reads Windows sign-in startup. Two consecutive generated-speech sessions passed through real Google and automatic Windows paste with exact text/HTML clipboard restoration. Source checks include 51 unit/integration tests and all 11 Electron scenarios in Windows CI. Physical microphone discovery/open/stop and installed restart checks also passed. The installer is unsigned; wider acceptance remains open. See the [release record](tests/manual-windows-qa.md).
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.6/Seyvo-0.1.6-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.6/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.6)
+[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
 
 Install for your Windows account and follow the setup steps below. **Create a desktop shortcut** and **Run Seyvo** are checked by default; either can be unchecked. Clicking Finish opens Seyvo with the microphone off. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
-![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard-0.1.6.png)
+![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard-0.1.7.png)
 
 ## What is implemented
 
@@ -51,7 +51,7 @@ Closing the window keeps the tray app running by default; choose **Quit Seyvo** 
 
 ![Fresh-profile onboarding in the installed Windows app](docs/assets/onboarding.png)
 
-![Nonactivating microphone bubble captured from the running app](docs/assets/overlay.png)
+![Transparent microphone bubble preview captured from the installed app](docs/assets/overlay-0.1.7.png)
 
 ## Compatibility and limitations
 
@@ -59,9 +59,9 @@ Initial development targets Windows 11 x64; the full [Windows matrix](tests/manu
 
 Installed single-line Unicode input has also passed in Edge, Word, VS Code and the logged-out ChatGPT web composer. The [target acceptance record](docs/target-acceptance-0.1.4.md) lists the exact versions/configurations, unsafe-target refusals and remaining clipboard/variant checks.
 
-Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. The refusal leaves the field unchanged. Clipboard mode there remains a separate acceptance item; inspect any result when choosing paste or Copy.
+Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. Clipboard paste passed with Hindi, emoji and multiple paragraphs in an owned Notepad document. Inspect results in your application before retrying.
 
-Clipboard paste can expose temporary text to Windows clipboard history or other apps. Unsupported clipboard formats cause safe refusal. Same-user malware may access secrets protected for that Windows account. See [support](docs/support-and-limitations.md), [security](SECURITY.md), [architecture](docs/architecture.md) and [threat model](docs/privacy-threat-model.md).
+Temporary paste text requests exclusion from Windows clipboard history and cloud sync; other clipboard readers may still observe it. Supported images, text/HTML, Chromium metadata and privacy flags are restored when unchanged. Unsupported or unavailable formats and snapshots over 64 MiB cause safe refusal. Same-user malware may access secrets protected for that Windows account. See [support](docs/support-and-limitations.md), [security](SECURITY.md), [architecture](docs/architecture.md) and [threat model](docs/privacy-threat-model.md).
 
 ## Commercial use and project governance
 

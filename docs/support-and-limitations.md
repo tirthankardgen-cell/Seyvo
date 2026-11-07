@@ -15,7 +15,7 @@ The installed 0.1.4 helper exactly preserved multilingual single-line Unicode in
 | Unsure whether a shortcut saved | Version 0.1.6 shows “Shortcut saved,” disables Save after success and displays the active or paused binding. A conflict keeps the previous binding and explains the refusal. |
 | Shortcut unavailable | Record another Ctrl+Shift/Alt combination or F6–F12. The previous working registration is retained. |
 | Cannot insert | Check original window/field/caret stayed selected. Protected, elevated, password, read-only, terminal, custom or remote editors may reject input. Copy is the fallback. Do not routinely run Seyvo as administrator. |
-| Direct Unicode unavailable in Notepad | Seyvo refuses this path before sending keys because the tested Windows 11 Notepad transformed the fixture. Recover the complete text from Seyvo. Clipboard mode there remains unaccepted; inspect the result if you choose paste or Copy. |
+| Direct Unicode unavailable in Notepad | Seyvo refuses this path before sending keys because the tested Windows 11 Notepad transformed the fixture. Recover the complete text from Seyvo. Clipboard mode passed the 0.1.7 owned-document Hindi/emoji/multiline test. Inspect your result before retrying. |
 | Clipboard cannot be preserved | Version 0.1.7 supports ordinary screenshot images and Windows clipboard privacy flags. Unsupported or unavailable formats and snapshots over 64 MiB still cause refusal. Copy deliberately replaces the clipboard; direct Unicode mode supports short single-line text in compatible controls. |
 | Sign-in switch appears unchanged | Version 0.1.7 reads the same executable and arguments used by Windows registration and confirms each change. If Windows rejects it, check Startup Apps in Windows Settings. |
 | Box around the bubble or bubble remains after finishing | Version 0.1.7 makes the whole window canvas transparent. Completion hides after 1.5 seconds; error/recovery hides after eight seconds. Open Seyvo from the tray to recover text before starting a new dictation. |
@@ -23,7 +23,7 @@ The installed 0.1.4 helper exactly preserved multilingual single-line Unicode in
 | Text duplicated after retry | SendInput cannot prove whether the app accepted paste. Always inspect the destination before retrying. |
 | Finalization timeout | Recovery contains committed segments; final words may be missing. Copy them if needed before starting the next dictation or dismissing. The next dictation never replays incomplete output. |
 | Native helper unavailable | Restart Seyvo, verify packaged resources/antivirus quarantine with the publisher, and consult release checks. |
-| Setup cannot find Seyvo.lnk | Install the current 0.1.6 build. Its Finish action launches the installed executable directly. Desktop shortcut and Run Seyvo are checked by default and can be unchecked. |
+| Setup cannot find Seyvo.lnk | Install the current 0.1.7 build. Its Finish action launches the installed executable directly. Desktop shortcut and Run Seyvo are checked by default and can be unchecked. |
 | Closing keeps process alive | Default close-to-tray behavior. Use Quit Seyvo to release all resources and exit. |
 | History disappeared | It defaults off and is deleted when disabled; configured age/count retention also applies. It is encrypted for the current Windows account. |
 

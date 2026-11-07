@@ -13,3 +13,7 @@ Validation: 51 unit/integration tests and 11 Electron scenarios passed. Native m
 Interactive setup keeps Create a desktop shortcut and Run Seyvo checked by default, with working opt-outs. Your encrypted key and preferences are retained on upgrade. The release includes an unsigned x64 installer, checksums, runtime SBOM and license inventory.
 
 This remains an unsigned validation prerelease. Signing, fresh-machine and broader physical/language/accessibility acceptance, and owner-controlled brand/provider launch decisions remain stable-release gates. Another app's acceptance cannot universally be confirmed; inspect the destination before retrying. There is no Seyvo subscription, backend, telemetry or automatic updater.
+
+Final installed source `468d3f3c0e3f` passed two real Google/generated-speech cycles using automatic clipboard paste: 55 characters each, with exact cumulative target text and exact preservation of the original text/HTML clipboard and Chromium metadata. Physical microphone discovery/open/stop, startup persistence/quiet launch, second-instance behavior, production fuses and clean exit also passed. Windows CI: https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42356338693.
+
+Installer SHA256: `26f70a358763c0782d14ed5d356a28b0d9e9dec2469693262f219c0577473389` (124,740,888 bytes). The signature status is NotSigned.
