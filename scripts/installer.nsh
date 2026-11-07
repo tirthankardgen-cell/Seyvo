@@ -11,7 +11,11 @@
     StrCpy $seyvoDesktopShortcut ${BST_CHECKED}
   !macroend
 
+  !macro customPageAfterChangeDir
   Function SeyvoOptionsPage
+    ${If} ${isUpdated}
+      Abort
+    ${EndIf}
     !insertmacro MUI_HEADER_TEXT "Installation options" "Choose how to open Seyvo."
     nsDialogs::Create 1018
     Pop $0
@@ -30,8 +34,6 @@
     ${NSD_GetState} $seyvoDesktopCheckbox $seyvoDesktopShortcut
   FunctionEnd
 
-  !macro customPageAfterChangeDir
-    !insertmacro skipPageIfUpdated
     Page custom SeyvoOptionsPage SeyvoOptionsLeave
   !macroend
 
