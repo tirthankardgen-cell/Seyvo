@@ -13,6 +13,7 @@ using System.Windows.Automation.Text;
 internal static class Program {
   [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
   [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] struct BITMAP { public int Type, Width, Height, WidthBytes; public ushort Planes, BitsPixel; public IntPtr Bits; }
   [StructLayout(LayoutKind.Sequential)] struct GUIINFO {
     public int Size, Flags; public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret; public RECT CaretRect;
   }
@@ -37,6 +38,10 @@ internal static class Program {
   [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
   [DllImport("user32.dll")] static extern IntPtr GetClipboardOwner();
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClipboardFormatName(uint format, StringBuilder name, int size);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern uint RegisterClipboardFormat(string name);
+  [DllImport("user32.dll")] static extern IntPtr CopyImage(IntPtr source,uint type,int x,int y,uint flags);
+  [DllImport("gdi32.dll")] static extern int GetObject(IntPtr handle,int size,out BITMAP bitmap);
+  [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr handle);
   [DllImport("kernel32.dll")] static extern UIntPtr GlobalSize(IntPtr h);
   [DllImport("kernel32.dll")] static extern IntPtr GlobalLock(IntPtr h);
   [DllImport("kernel32.dll")] static extern bool GlobalUnlock(IntPtr h);
@@ -190,22 +195,73 @@ internal static class Program {
     for (int i=0; i<20; i++) { if (OpenClipboard(clipboardOwner)) return; Thread.Sleep(10); }
     throw new InvalidOperationException("clipboard-busy");
   }
-  static bool Supported(uint format) {
-    if (format == 1 || format == 7 || format == 8 || format == 13 || format == 16 || format == 17) return true;
+  static string FormatName(uint format) {
     StringBuilder name = new StringBuilder(256); GetClipboardFormatName(format, name, name.Capacity);
-    return name.ToString() == "HTML Format" || name.ToString() == "Rich Text Format" || name.ToString() == "PNG";
+    return name.ToString();
   }
-  static Dictionary<uint, byte[]> Snapshot() {
-    Dictionary<uint, byte[]> data = new Dictionary<uint, byte[]>(); uint format=0; long total=0;
-    while ((format=EnumClipboardFormats(format)) != 0) {
-      if (!Supported(format)) throw new InvalidOperationException("clipboard-format-unsupported");
-      IntPtr handle=GetClipboardData(format); long size=(long)GlobalSize(handle).ToUInt64(); total+=size;
-      if (size <= 0 || total > 16777216) throw new InvalidOperationException("clipboard-too-large");
-      IntPtr ptr=GlobalLock(handle); if (ptr == IntPtr.Zero) throw new InvalidOperationException("clipboard-unavailable");
-      try { byte[] bytes=new byte[(int)size]; Marshal.Copy(ptr, bytes, 0, bytes.Length); data[format]=bytes; }
-      finally { GlobalUnlock(handle); }
+  static bool Supported(uint format, string name) {
+    if (format == 1 || format == 7 || format == 8 || format == 13 || format == 16 || format == 17) return true;
+    return name == "HTML Format" || name == "Rich Text Format" || name == "PNG" || name == "System.Drawing.Bitmap" ||
+      name == "CanIncludeInClipboardHistory" || name == "CanUploadToCloudClipboard" ||
+      name == "ExcludeClipboardContentFromMonitorProcessing";
+  }
+  sealed class ClipboardSnapshot : IDisposable {
+    public readonly Dictionary<uint,byte[]> Data=new Dictionary<uint,byte[]>();
+    public IntPtr Bitmap;
+    public void Restore() {
+      foreach(var item in Data) Put(item.Key,item.Value);
+      // Keep the original GDI rendering as well as the portable DIB/PNG data.
+      // Windows may color-convert a bitmap synthesized from DIBV5.
+      if(Bitmap!=IntPtr.Zero) {
+        if(SetClipboardData(2,Bitmap)==IntPtr.Zero) throw new InvalidOperationException("clipboard-write");
+        Bitmap=IntPtr.Zero; // Ownership transferred to Windows exactly once.
+      }
     }
-    return data;
+    public void Dispose() {
+      if(Bitmap!=IntPtr.Zero){DeleteObject(Bitmap);Bitmap=IntPtr.Zero;}
+      foreach(byte[] bytes in Data.Values)Array.Clear(bytes,0,bytes.Length);
+      Data.Clear();
+    }
+  }
+  static ClipboardSnapshot Snapshot() {
+    ClipboardSnapshot snapshot=new ClipboardSnapshot();uint format=0;long total=0;
+    var data=snapshot.Data;
+    List<uint> formats=new List<uint>();
+    while ((format=EnumClipboardFormats(format)) != 0) formats.Add(format);
+    bool dibV5=formats.Contains(17), content=false, ole=false;
+    try {
+      foreach(uint item in formats) {
+        if(item==2) {
+          IntPtr source=GetClipboardData(2);BITMAP bitmap;
+          if(source==IntPtr.Zero || GetObject(source,Marshal.SizeOf(typeof(BITMAP)),out bitmap)==0)
+            throw new InvalidOperationException("clipboard-unavailable");
+          long bitmapBytes=Math.Abs((long)bitmap.Height)*Math.Abs((long)bitmap.WidthBytes);total+=bitmapBytes;
+          if(bitmapBytes<=0 || total>67108864)throw new InvalidOperationException("clipboard-too-large");
+          snapshot.Bitmap=CopyImage(source,0,0,0,0);
+          if(snapshot.Bitmap==IntPtr.Zero)throw new InvalidOperationException("clipboard-unavailable");
+          content=true;continue;
+        }
+        // DIBV5 retains the full portable image; Windows can synthesize DIB.
+        if(item==8 && dibV5)continue;
+        string name=FormatName(item);
+        // These identify the previous COM clipboard owner, not transferable
+        // content. Replaying its pointers after ownership changes is unsafe.
+        // Every concrete payload must still be supported and materialized.
+        if(name=="DataObject" || name=="Ole Private Data") { ole=true; continue; }
+        if (!Supported(item,name)) throw new InvalidOperationException("clipboard-format-unsupported");
+        IntPtr handle=GetClipboardData(item); long size=(long)GlobalSize(handle).ToUInt64(); total+=size;
+        if (size <= 0 || total > 67108864) throw new InvalidOperationException("clipboard-too-large");
+        IntPtr ptr=GlobalLock(handle); if (ptr == IntPtr.Zero) throw new InvalidOperationException("clipboard-unavailable");
+        try { byte[] bytes=new byte[(int)size]; Marshal.Copy(ptr, bytes, 0, bytes.Length); data[item]=bytes; }
+        finally { GlobalUnlock(handle); }
+        if(item<0xC000 || name=="PNG" || name=="HTML Format" || name=="Rich Text Format") content=true;
+      }
+      if(ole && !content) throw new InvalidOperationException("clipboard-format-unsupported");
+      return snapshot;
+    } catch {
+      snapshot.Dispose();
+      throw;
+    }
   }
   static void Put(uint format, byte[] bytes) {
     IntPtr handle=GlobalAlloc(0x0042, (UIntPtr)bytes.Length);
@@ -235,13 +291,25 @@ internal static class Program {
       Verify(target); target.InputAttempted=true; Send(inputs.ToArray());
       return new { attempted=true, restored=true, message="Insertion may have failed. Check the target before retrying." };
     }
-    Dictionary<uint,byte[]> original=null; uint ours=0; bool restored=false;
+    ClipboardSnapshot original=null; uint ours=0; bool restored=false;
     Open();
     try {
       original=Snapshot(); Verify(target);
       if (!EmptyClipboard()) throw new InvalidOperationException("clipboard-busy");
-      try { Put(13, Encoding.Unicode.GetBytes(text.Replace("\r\n", "\n").Replace("\n", "\r\n")+"\0")); }
-      catch { EmptyClipboard(); foreach(var item in original) Put(item.Key,item.Value); throw; }
+      try {
+        // Tell Windows not to put the temporary transcript in clipboard history
+        // or cloud sync. Other clipboard readers may still observe it.
+        foreach(string name in new string[] { "CanIncludeInClipboardHistory", "CanUploadToCloudClipboard" }) {
+          uint flag=RegisterClipboardFormat(name);
+          if(flag==0) throw new InvalidOperationException("clipboard-write");
+          Put(flag,BitConverter.GetBytes(0));
+        }
+        Put(13, Encoding.Unicode.GetBytes(text.Replace("\r\n", "\n").Replace("\n", "\r\n")+"\0"));
+      }
+      catch { EmptyClipboard(); original.Restore(); throw; }
+    } catch {
+      if(original!=null)original.Dispose();
+      throw;
     } finally { CloseClipboard(); }
     try {
       // Windows can advance the sequence when CloseClipboard publishes formats.
@@ -257,9 +325,9 @@ internal static class Program {
     } finally {
       try {
         Open();
-        try { if (ours!=0 && GetClipboardSequenceNumber()==ours && GetClipboardOwner()==clipboardOwner) { EmptyClipboard(); foreach(var item in original) Put(item.Key,item.Value); restored=true; } }
+        try { if (ours!=0 && GetClipboardSequenceNumber()==ours && GetClipboardOwner()==clipboardOwner) { EmptyClipboard(); original.Restore(); restored=true; } }
         finally { CloseClipboard(); }
-      } finally { foreach(byte[] bytes in original.Values) Array.Clear(bytes,0,bytes.Length); }
+      } finally { original.Dispose(); }
     }
     return new { attempted=true, restored=restored, message="Insertion may have failed. Check the target before retrying." };
   }

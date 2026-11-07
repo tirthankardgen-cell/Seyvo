@@ -36,6 +36,11 @@ import { SessionCoordinator } from './session-coordinator';
 declare const __SEYVO_BUILD__: string;
 
 const profile = app.commandLine.getSwitchValue('user-data-dir');
+let startupStage = 'initialization';
+let exiting = false;
+app.on('before-quit', () => {
+  exiting = true;
+});
 if (profile) app.setPath('userData', profile);
 app.setAppUserModelId(brand.appId);
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -44,14 +49,16 @@ else
     .whenReady()
     .then(run)
     .catch(() => {
+      if (exiting) return;
       dialog.showErrorBox(
         'Seyvo could not start',
-        'Local application data or Windows services are unavailable. Restart Seyvo or consult the troubleshooting guide.',
+        `Seyvo could not initialize ${startupStage}. Restart Seyvo or consult the troubleshooting guide.`,
       );
       app.quit();
     });
 
 async function run(): Promise<void> {
+  startupStage = 'local application data';
   Menu.setApplicationMenu(null);
   const storage = new Storage(app.getPath('userData'), {
     encrypt: async (text) => {
@@ -70,6 +77,7 @@ async function run(): Promise<void> {
   let shuttingDown = false;
   let practice = false;
   let delayedAbort: AbortController | undefined;
+  startupStage = 'Windows integration';
   const native = new NativeBridge(
     app.isPackaged
       ? join(process.resourcesPath, 'native', 'Seyvo.Native.exe')
@@ -126,12 +134,14 @@ async function run(): Promise<void> {
     ? join(process.resourcesPath, 'assets/icon.png')
     : join(app.getAppPath(), 'assets/icon.png');
   const icon = nativeImage.createFromPath(iconPath);
+  startupStage = 'the system tray';
   const tray = new Tray(icon.resize({ width: 20, height: 20 }));
   tray.on('click', () => {
     void windows.showDashboard().then(publish);
   });
   let lastTrayState = '';
   let overlayTimer: NodeJS.Timeout | undefined;
+  const loginItemOptions = { path: process.execPath, args: ['--startup'] };
   function status(): Status {
     return {
       phase: coordinator.phase,
@@ -147,7 +157,7 @@ async function run(): Promise<void> {
       targetApp: coordinator.targetApp,
       shortcutRegistered: Boolean(shortcuts.current),
       nativeAvailable: native.available,
-      startup: app.getLoginItemSettings().openAtLogin,
+      startup: app.getLoginItemSettings(loginItemOptions).openAtLogin,
       startupAvailable: app.isPackaged,
       version: app.getVersion(),
       buildHash: __SEYVO_BUILD__,
@@ -214,12 +224,14 @@ async function run(): Promise<void> {
         ]),
       );
       if (overlayTimer) clearTimeout(overlayTimer);
-      // Keep actionable failures visible until the user handles them. The bubble
-      // contains no recovery text and never takes focus from the destination.
-      if (!coordinator.busy && snapshot.phase === 'idle')
+      // Terminal status is brief; recovery stays available in the dashboard.
+      // Never leave a click-through bubble over the user's destination forever.
+      if (!coordinator.busy && ['idle', 'error', 'recovery'].includes(snapshot.phase))
         overlayTimer = setTimeout(
           () => windows.hideOverlay(),
-          snapshot.message.startsWith('No finalized speech') ? 8000 : 2500,
+          snapshot.phase !== 'idle' || snapshot.message.startsWith('No finalized speech')
+            ? 8000
+            : 1500,
         );
     }
     if (coordinator.busy && !globalShortcut.isRegistered('Escape'))
@@ -457,11 +469,8 @@ async function run(): Promise<void> {
     const enabled = z.boolean().parse(input);
     if (!app.isPackaged)
       throw new AppError('Startup registration is available after installing Seyvo.');
-    app.setLoginItemSettings({ openAtLogin: enabled, path: process.execPath, args: ['--startup'] });
-    const actual = app.getLoginItemSettings({
-      path: process.execPath,
-      args: ['--startup'],
-    }).openAtLogin;
+    app.setLoginItemSettings({ openAtLogin: enabled, ...loginItemOptions });
+    const actual = app.getLoginItemSettings(loginItemOptions).openAtLogin;
     if (actual !== enabled)
       throw new AppError(
         'Windows did not accept the startup change. Check Startup Apps in Windows Settings.',
@@ -633,12 +642,14 @@ async function run(): Promise<void> {
     void coordinator.cancel().catch(report);
   });
   nativeTheme.themeSource = storage.settings.theme;
+  startupStage = 'Windows startup settings';
   if (storage.warning) coordinator.message = storage.warning;
   publish();
+  startupStage = 'the application window';
   if (
     !storage.settings.onboardingComplete ||
     (!storage.settings.startMinimized && !process.argv.includes('--startup'))
   )
     await windows.showDashboard();
-  publish();
+  if (!shuttingDown) publish();
 }

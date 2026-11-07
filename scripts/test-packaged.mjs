@@ -61,10 +61,26 @@ try {
   assert.equal(status.microphoneActive, false);
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined');
   await page.screenshot({ path: 'artifacts/packaged/installed-onboarding.png' });
-  const enabled = await page.evaluate(() => window.seyvo.startup(true));
-  assert.equal(enabled.ok && enabled.value, true);
-  const disabled = await page.evaluate(() => window.seyvo.startup(false));
-  assert.equal(disabled.ok && disabled.value, false);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  const startupToggle = page.getByLabel('Launch when I sign in', { exact: true });
+  try {
+    await startupToggle.check();
+    await expect(startupToggle).toBeChecked();
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).startup)
+      .toBe(true);
+    await startupToggle.uncheck();
+    await expect(startupToggle).not.toBeChecked();
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).startup)
+      .toBe(false);
+  } finally {
+    const restored = await page.evaluate(
+      (initial) => window.seyvo.startup(initial),
+      status.startup,
+    );
+    assert.equal(restored.ok && restored.value, status.startup);
+  }
   const mic = await page.evaluate(() => window.seyvo.action('micTest'));
   assert.equal(mic.ok, true);
   await expect

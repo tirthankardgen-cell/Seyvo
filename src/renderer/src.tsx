@@ -13,6 +13,12 @@ import { audioLevel } from '../shared/audio-level';
 import { shortcutSchema } from '../shared/contracts';
 import './styles.css';
 
+// Set the canvas before the first render/status roundtrip. Transparent body
+// alone still exposes the dashboard's opaque HTML background on Windows.
+const isOverlay = location.hash === '#overlay';
+document.documentElement.classList.toggle('overlay-root', isOverlay);
+document.body.classList.toggle('overlay-body', isOverlay);
+
 function Mark({ small = false }: { small?: boolean }) {
   return (
     <span className={`brand-mark ${small ? 'small' : ''}`} aria-hidden="true">
@@ -83,9 +89,10 @@ function App() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [shortcut, setShortcut] = useState('');
   const [shortcutMessage, setShortcutMessage] = useState('');
+  const [startupMessage, setStartupMessage] = useState('');
   const [step, setStep] = useState(0);
   const practice = useRef<HTMLTextAreaElement>(null);
-  const overlay = location.hash === '#overlay';
+  const overlay = isOverlay;
   useEffect(() => {
     void window.seyvo
       .status()
@@ -123,6 +130,14 @@ function App() {
       setShortcut('');
       setShortcutMessage('Shortcut saved.');
     }
+  }
+  async function saveStartup(enabled: boolean) {
+    setStartupMessage('');
+    const actual = await run(window.seyvo.startup(enabled));
+    if (actual !== undefined)
+      setStartupMessage(
+        actual ? 'Seyvo will launch when you sign in.' : 'Launch at sign-in is off.',
+      );
   }
   async function loadHistory() {
     const value = await run(window.seyvo.history('list'));
@@ -804,9 +819,10 @@ function App() {
                     ? 'Per-user Windows startup registration.'
                     : 'Available in the installed build.',
                   status.startup,
-                  (value) => void run(window.seyvo.startup(value)),
+                  (value) => void saveStartup(value),
                   !status.startupAvailable,
                 )}
+                {startupMessage && <p role="status">{startupMessage}</p>}
                 {toggle(
                   'Start minimized',
                   'Open quietly in the system tray after setup.',

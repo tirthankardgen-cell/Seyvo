@@ -151,7 +151,7 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
     const overlay = app.windows().find((p) => p.url().includes('#overlay'))!;
     await expect(overlay.getByText('Check your text', { exact: true })).toBeVisible();
     expect(await overlay.locator('body').innerText()).not.toContain(before.recovery);
-    // Previously all bubbles hid after 2.5 seconds, concealing the reason for no paste.
+    // Failures remain briefly visible, then hide without dropping recovery.
     await new Promise((resolve) => setTimeout(resolve, 3000));
     expect(
       await app.evaluate(({ BrowserWindow }) =>
@@ -160,6 +160,17 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
           .isVisible(),
       ),
     ).toBe(true);
+    await expect
+      .poll(
+        () =>
+          app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()
+              .find((w) => w.webContents.getURL().includes('#overlay'))!
+              .isVisible(),
+          ),
+        { timeout: 7000 },
+      )
+      .toBe(false);
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()
         .find((w) => w.webContents.getURL().endsWith('index.html'))!
@@ -212,6 +223,17 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
       expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
       expect(await dashboardVisible()).toBe(false);
     }
+    await expect
+      .poll(
+        () =>
+          app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()
+              .find((w) => w.webContents.getURL().includes('#overlay'))!
+              .isVisible(),
+          ),
+        { timeout: 4000 },
+      )
+      .toBe(false);
   } finally {
     if (target?.exitCode === null) {
       target.stdin?.write('quit\n');

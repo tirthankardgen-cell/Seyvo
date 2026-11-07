@@ -1,6 +1,6 @@
 {
   "name": "seyvo",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Windows voice dictation with your own Gemini API key",
   "main": "out/main/index.js",
   "author": "Tirthankar Dasgupta",

@@ -1,5 +1,7 @@
 # Contributing
 
+Contributions are welcome from everyone. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) in issues, pull requests, discussions and other project spaces. You can help with fixes, tests, documentation, accessibility and Windows compatibility reports.
+
 Use Windows 11 x64, Node 26.13.0 LTS (or a compatible newer 26.x patch), npm and the .NET Framework 4.x C# compiler included with Windows. The native helper uses Windows Forms and UI Automation assemblies shipped with the framework. No Rust toolchain or .NET SDK is needed. See `AGENTS.md` and the two source requirements documents.
 
 ```powershell
@@ -21,3 +23,5 @@ Write focused tests for state transitions, cancellation, provider/OS boundaries,
 Use strict TypeScript and `npm run format`. Public methods must have narrow schemas. Never return saved secrets through IPC. Keep provider details out of UI state, avoid target-field content reads, do not claim a SendInput return value proves a successful paste. New settings must change real behavior and persist. New dependencies require a compatible license, pinned lockfile and an audit.
 
 File bug reports with version, Windows build, target executable, steps and coarse error message. Redact keys, transcript and clipboard content. Include tests and update user-facing docs for behavior changes. Maintainers publish releases only through the checked release process; ordinary contributions do not need signing credentials.
+
+For installed lifecycle acceptance, run `node scripts/test-startup.mjs <path-to-Seyvo.exe>`: it exercises the real sign-in switch, restart persistence, tray launch and single-instance handoff, then restores the previous Windows registration. `npm run test:native -- --image-clipboard` observes an existing image-only clipboard and checks restoration during real paste without saving image contents. `node scripts/test-live.mjs --executable=<path-to-Seyvo.exe> --repeat --paste --image-clipboard` repeats that path using the saved key and generated speech sent to real Google. These tests open labelled windows; run them sequentially and leave the test target focused.

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.7 — validation
+
+Preserve supported screenshot images and Windows clipboard privacy flags during paste. Keep portable image data and the native bitmap in a bounded 64 MiB transaction; ignore only COM owner bookkeeping, and refuse unsupported content before mutation. Temporary transcripts request exclusion from Windows clipboard history and cloud sync. Existing target, modifier, one-shot insertion and concurrent-copy checks remain in force.
+
+Make the entire floating-window canvas transparent in all themes. Hide completion after 1.5 seconds and error/recovery after eight seconds, retaining recoverable words in Home until the next explicit dictation, Dismiss or exit.
+
+Read the sign-in preference using the same executable and arguments used to register it. Confirm changes in Settings. Prevent pending window requests from reopening windows during shutdown, and identify the failed initialization stage in startup dialogs without logging private errors.
+
+Clarify free, open-source MIT use and welcome contributions with a project Code of Conduct.
+
 ## 0.1.6 — validation
 
 Make repeated dictation work without dismissing the last result. After native input is sent, return to Ready; the next explicit dictation replaces the previous in-memory transcript and captures a fresh target. Failed or incomplete output remains available until that next activation, Copy, Dismiss or exit. No stale result is replayed, and history remains opt-in. “Text sent” describes the Windows input attempt, not independent confirmation that another app accepted it.

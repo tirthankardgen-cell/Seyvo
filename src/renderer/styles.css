@@ -643,8 +643,11 @@ footer button {
   justify-content: center;
   padding: 40px;
 }
-.overlay-body {
+html.overlay-root,
+html.overlay-root body,
+html.overlay-root #root {
   background: transparent;
+  color-scheme: normal;
   overflow: hidden;
 }
 .overlay-frame {

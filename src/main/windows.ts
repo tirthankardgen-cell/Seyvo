@@ -87,6 +87,7 @@ export class Windows {
     };
   }
   async showDashboard(): Promise<void> {
+    if (this.quitting) return;
     if (!this.dashboard || this.dashboard.isDestroyed()) {
       const window = new BrowserWindow({
         width: 1020,
@@ -113,12 +114,13 @@ export class Windows {
       this.dashboardReady = window.loadURL(this.url('index.html'));
     }
     await this.dashboardReady;
+    if (this.quitting || this.dashboard.isDestroyed()) return;
     if (this.dashboard.isMinimized()) this.dashboard.restore();
     this.dashboard.show();
     this.dashboard.focus();
   }
   async showOverlay(target?: Target): Promise<void> {
-    if (!this.settings().showOverlay) return;
+    if (this.quitting || !this.settings().showOverlay) return;
     const request = ++this.overlayRequest;
     this.overlayTarget = target;
     if (!this.overlay || this.overlay.isDestroyed()) {
@@ -128,6 +130,7 @@ export class Windows {
         show: false,
         frame: false,
         transparent: true,
+        backgroundColor: '#00000000',
         focusable: false,
         alwaysOnTop: true,
         skipTaskbar: true,
@@ -166,7 +169,7 @@ export class Windows {
   hideOverlay(): void {
     ++this.overlayRequest;
     this.overlayTarget = undefined;
-    this.overlay?.hide();
+    if (this.overlay && !this.overlay.isDestroyed()) this.overlay.hide();
   }
   broadcast(status: Status): void {
     for (const window of [this.dashboard, this.overlay])

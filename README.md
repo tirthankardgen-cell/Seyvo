@@ -2,7 +2,9 @@
 
 **Speak. Refine. Paste.**
 
-A Windows voice-dictation utility with your own Google Gemini API key. Use a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
+Seyvo is a free-to-download, open-source Windows voice-dictation app under the [MIT license](LICENSE). Anyone can download and use it, including for commercial purposes. Bring your own Google Gemini API key, press a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
+
+Contributions are welcome from everyone. Read [CONTRIBUTING.md](CONTRIBUTING.md) and follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating.
 
 **0.1.6 validation build:** shortcut saves now show confirmation, and the next dictation starts fresh without dismissing old results. The installed app passed two consecutive generated-speech sessions through real Google and native Windows insertion, 51 unit/integration tests, 11 Electron scenarios and Windows CI. Physical microphone discovery/selection/open/stop also passed; the user reported successful human dictation separately. The installer is unsigned, and wider acceptance remains open. See the [release record](tests/manual-windows-qa.md).
 

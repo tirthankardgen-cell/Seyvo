@@ -54,6 +54,21 @@ test('custom placement persists, caret preview falls back safely, and preview ne
     expect(custom.focusable).toBe(false);
     expect(custom.recorder).toBe(false);
     expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
+    const overlayPage = app.windows().find((candidate) => candidate.url().includes('#overlay'))!;
+    for (const theme of ['light', 'dark', 'system'] as const) {
+      await page.evaluate((theme) => window.seyvo.updateSettings({ theme }), theme);
+      await expect(overlayPage.locator('html')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(overlayPage.locator('body')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    }
+    const alpha = await app.evaluate(async ({ BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows().find((candidate) =>
+        candidate.webContents.getURL().includes('#overlay'),
+      )!;
+      const image = await window.webContents.capturePage();
+      const bitmap = image.toBitmap();
+      return { corner: bitmap[3], nonempty: bitmap.some((value, i) => i % 4 === 3 && value > 0) };
+    });
+    expect(alpha).toEqual({ corner: 0, nonempty: true });
     await page.getByLabel('Bubble placement', { exact: true }).selectOption('caret');
     await page.getByRole('button', { name: 'Preview bubble', exact: true }).click();
     const fallback = (await geometry())!;

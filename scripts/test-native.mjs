@@ -21,6 +21,8 @@ const compiled = spawnSync(
 if (compiled.status) throw new Error(compiled.stdout);
 function processLines(file) {
   const child = spawn(file, [], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  let command = 'startup';
+  child.stderr.on('data', (chunk) => process.stderr.write(chunk));
   const queue = [];
   const waiting = [];
   createInterface({ input: child.stdout }).on('line', (line) => {
@@ -34,13 +36,19 @@ function processLines(file) {
       queue.length
         ? Promise.resolve(queue.shift())
         : new Promise((resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error('Native test timed out')), 8000);
+            const timer = setTimeout(
+              () => reject(new Error(`${file}: ${command} timed out`)),
+              15000,
+            );
             waiting.push((line) => {
               clearTimeout(timer);
               resolve(line);
             });
           }),
-    send: (data) => child.stdin.write(data + '\n'),
+    send: (data) => {
+      command = data.startsWith('{') ? JSON.parse(data).command : data;
+      child.stdin.write(data + '\n');
+    },
   };
 }
 const helper = processLines('native-win/bin/Seyvo.Native.exe');
@@ -142,6 +150,43 @@ try {
     );
   } else {
     assert.equal(prepared, 'clipboard-not-empty');
+    if (process.argv.includes('--image-clipboard')) {
+      host.send('clipboard-image-observe');
+      assert.equal(
+        await host.next(),
+        'image-observed',
+        'An image-only clipboard is required for this opt-in check.',
+      );
+      host.send('clear');
+      await host.next();
+      host.send('focus');
+      assert.equal(await host.next(), 'focused');
+      const imageTarget = await call('capture', { ownPid: process.pid });
+      assert.equal(imageTarget.result.app.toLowerCase(), 'testhost.exe');
+      const imagePaste = await call('insert', {
+        token: imageTarget.result.token,
+        text,
+        method: 'paste',
+      });
+      host.send('clipboard-image-unchanged');
+      assert.equal(
+        await host.next(),
+        'image-unchanged',
+        'Image payloads and privacy flags must remain exact.',
+      );
+      assert.equal(imagePaste.ok, true, JSON.stringify(imagePaste));
+      assert.equal(imagePaste.result.restored, true);
+      host.send('text');
+      assert.equal(
+        Buffer.from(await host.next(), 'base64')
+          .toString()
+          .replaceAll('\r\n', '\n'),
+        text,
+      );
+      results.push(
+        'PASS: native multiline paste with existing image clipboard; PNG/DIB pixels and Windows privacy flags restored exactly.',
+      );
+    }
     results.push(
       'SKIP: controlled clipboard restoration/race cases require an empty desktop clipboard.',
     );

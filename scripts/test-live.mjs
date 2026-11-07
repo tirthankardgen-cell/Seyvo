@@ -13,6 +13,8 @@ const hardware = human || process.argv.includes('--hardware');
 const development = process.argv.includes('--development');
 const caretPlacement = process.argv.includes('--caret');
 const repeats = process.argv.includes('--repeat') ? 2 : 1;
+const insertionMethod = process.argv.includes('--paste') ? 'paste' : 'unicode';
+const imageClipboard = process.argv.includes('--image-clipboard');
 const executableArgument = process.argv.find((argument) => argument.startsWith('--executable='));
 const wav = resolve('.tools/live-speech.wav');
 const bytes = await readFile(wav);
@@ -80,6 +82,7 @@ const report = {
       ? 'Windows physical microphone; generated sentence played through speakers'
       : 'Generated speech WAV through Chromium capture and the real recorder worklet',
   googleMocked: false,
+  insertionMethod,
 };
 try {
   const endpoint = await new Promise((done, fail) => {
@@ -115,18 +118,19 @@ try {
   assert.equal(connected.ok, true, connected.error);
   report.googleSetup = 'passed';
   const configured = await page.evaluate(
-    (caretPlacement) =>
+    ({ caretPlacement, insertionMethod }) =>
       window.seyvo.updateSettings({
         shortcut: 'F8',
-        insertion: 'unicode',
+        insertion: insertionMethod,
         paused: false,
         deviceId: 'default',
         ...(caretPlacement ? { overlayPosition: 'caret', showOverlay: true, captions: false } : {}),
       }),
-    caretPlacement,
+    { caretPlacement, insertionMethod },
   );
   assert.equal(configured.ok, true, configured.error);
   assert.equal(await next(), 'ready');
+  if (imageClipboard) assert.equal(await command('clipboard-image-observe'), 'image-observed');
   let cumulative = '';
   report.sessions = [];
   for (let cycle = 0; cycle < repeats; cycle++) {
@@ -204,6 +208,10 @@ try {
       'The target did not receive exactly the consecutive finalized text.',
     );
     report.sessions.push({ cycle: cycle + 1, ...report.textChecks, phase: result.phase });
+    if (imageClipboard) {
+      assert.equal(await command('clipboard-image-unchanged'), 'image-unchanged');
+      report.imageClipboardPreserved = true;
+    }
   }
   report.globalShortcut = 'started and stopped using real Windows key events';
   report.insertion = 'recognized test sentence reached original native text field';
