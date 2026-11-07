@@ -7,7 +7,7 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 | Typecheck / lint / production build | Passed the final implementation gate. |
 | GitHub Windows CI | Initial implementation passed [run 42299582189](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42299582189). The 0.1.1 cold-start patch passed [run 42301070076](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42301070076), including clean dependencies, runtime preparation, checks, E2E, audit and secret scan. |
 | Development launch | The Vite loopback renderer and native helper loaded successfully with microphone off. |
-| Core unit/integration tests | 41 passed in 0.1.3: PCM, validation, shortcuts, assembly, provider boundaries/vocabulary/failures, cues, cancellation, geometry, storage and redirected-profile recovery. Network/native services are mocked at this tier. |
+| Core unit/integration tests | 49 passed in 0.1.4: PCM, validation, shortcuts, assembly, provider boundaries/vocabulary/failures, cues, cancellation, geometry, storage and redirected-profile recovery. Network/native services are mocked at this tier. |
 | Electron E2E | Passed. Real app UI, persistence, renderer isolation, malformed/unauthorized IPC, Windows encryption, compiled WebSocket/vault loopback test and physical microphone open/stop. Google is mocked only for the loopback test. |
 | Live Google key/model access | Passed from the installed app, using a user-owned key kept in the encrypted Windows profile. Exact model: gemini-3.5-transcribe-live. |
 | Packaged speech → Google → original field | Passed using a generated speech WAV through Chromium capture, the production recorder/worklet, real Google and real Win32 input. Both shortcut activations used Windows input events. Recognized and inserted text matched; microphone stopped. No provider mock or transcript artifact. |
@@ -31,7 +31,7 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 
 Evidence files are generated locally under ignored artifacts/: native/results.txt, packaged/results.json, live/recorded-speech.json, live/microphone.json, screenshots, performance, SBOM and licenses. They contain coarse results, not credentials or private transcripts. Release checksums identify the final uploaded installer.
 
-Current 0.1.3 installer SHA256: `ec235a8652540b7676851a3980c42af9c418497129f5152400cbe44ba79d0702`. File: `Seyvo-0.1.3-windows-x64-setup.exe`; build `4a9d663bee58`. Archived 0.1.2 hash: `c5a42c45f7d6dc8e7f82ac457e3c23e9685115bb57bbeb82fdfbb082c876384e`; archived 0.1.1 hash: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`; archived 0.1.0 hash: `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
+Archived 0.1.3 installer SHA256: `ec235a8652540b7676851a3980c42af9c418497129f5152400cbe44ba79d0702`. File: `Seyvo-0.1.3-windows-x64-setup.exe`; build `4a9d663bee58`. Archived 0.1.2 hash: `c5a42c45f7d6dc8e7f82ac457e3c23e9685115bb57bbeb82fdfbb082c876384e`; archived 0.1.1 hash: `0824e2394499b6fc987b107316c181268937d59f350106d3e33863ab5e2179c0`; archived 0.1.0 hash: `3b67b030bcfbb81a6328dfdcf055354c6dd23d473ee2a52f0bbff48446a7611b`. Builds are unsigned.
 
 ## Reproduce
 
@@ -96,3 +96,19 @@ Typecheck, lint, production build, 49 unit/integration tests and all nine Electr
 The Codex Security Standard scan of revision `7128c2cb20ceeb1467935fbf06864bb1752f3bc5` completed with one low-severity cancellation race. Five regression cases reproduced it before remediation and passed afterward: cancelled paste, Unicode and copy during history persistence, shutdown during persistence, and a late failure after a new recording. A distinct delivery identity now survives capture cleanup and is revoked before pending output. See `docs/security-review-0.1.4.md`; the original scan is not described as a no-findings report.
 
 Native clipboard mutation fixtures continue to require an empty clipboard; occupied user clipboard contents are preserved. The user's physical spoken acceptance remains deferred at their request.
+
+## 0.1.4 final installer acceptance
+
+Build `9839000c6cfd` passed [GitHub Windows CI 42316720466](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42316720466), including clean dependencies, typecheck/lint/build, 49 unit/integration tests, nine Electron scenarios, dependency audit and source credential-pattern scan. The unsigned installer is `Seyvo-0.1.4-windows-x64-setup.exe`, 124,707,747 bytes, SHA256 `a762ef343dafbac103bbedf32ecbb6173d27de1825c4145014c52daff5744fcc`.
+
+The exact installed build passed startup roundtrip, physical microphone discovery/selection/open/stop, production fuses, local-renderer enforcement despite a malicious development URL, and clean exit. The saved encrypted user key tested successfully against real Google. Generated speech traversed the installed recorder/worklet and provider; all 55 finalized characters matched the original Windows Forms field. F8 start/stop used real Windows events. Caret placement was enabled and its bubble screenshot was inspected. Capture stopped and the app exited cleanly; no key or transcript entered the result artifact.
+
+Upgrade and uninstall/reinstall retained settings and encrypted-key presence, removed startup registration and relaunched the native helper successfully. The installed Notepad Unicode guard refused before input and left the owned synthetic field exactly unchanged. Native caret geometry, Unicode/Hindi/emoji and one-shot/read-only/non-text refusal passed. Clipboard restoration/race fixtures reported SKIP because the user's clipboard was occupied; it was not replaced.
+
+The [packaged benchmark](../docs/packaged-performance-0.1.4.json) measured 832 ms readiness and 0.270% of one core over 11,569 ms idle on this workstation. Microphone remained off, both external TCP samples were zero, the dashboard was hidden to tray and exit was clean. This is a single fresh-profile packaged sample with CDP overhead and possible warm OS cache, not a battery/cold-boot/clean-machine guarantee.
+
+Full dependency audit reported zero vulnerabilities. Source, 15 Git revisions and bundled own-code credential-pattern scans passed. Release includes installer, checksums, runtime CycloneDX SBOM and the complete 520-package lockfile license inventory. The current unsigned [v0.1.4 prerelease](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.4) is bound to source `9839000c6cfdb858c121f1de98af18bca277b50d`.
+
+Human speech remains deferred at the user's request. Clean-machine, wider physical/target/accessibility acceptance, signing and brand/provider launch decisions remain open. No stable commercial completion is claimed.
+
+The full public 0.1.4 installer was downloaded again: 124,707,747 bytes, SHA256 `a762ef343dafbac103bbedf32ecbb6173d27de1825c4145014c52daff5744fcc`, matching the tested local installer. Fresh-profile onboarding and the installed live caret bubble screenshots were inspected and updated in the documentation.

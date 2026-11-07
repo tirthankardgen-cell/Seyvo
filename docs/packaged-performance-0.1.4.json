@@ -1,0 +1,21 @@
+{
+  "version": "0.1.4",
+  "buildHash": "9839000c6cfd",
+  "capturedAt": "2026-11-07T00:14:51.980Z",
+  "launchToReadyMilliseconds": 832,
+  "observedIdleMilliseconds": 11569,
+  "idleCpuPercentOfOneCore": 0.27,
+  "idleCpuPercentOfMachine": 0.023,
+  "logicalProcessors": 12,
+  "processCount": 6,
+  "processTreeStable": true,
+  "privateCommitMiB": 257.1,
+  "summedWorkingSetMiB": 424,
+  "externalTcpConnectionsAtSamples": [
+    0,
+    0
+  ],
+  "microphoneActive": false,
+  "scope": "Single packaged run on this workstation, fresh profile, normal close-to-tray with dashboard resident. OS cache may be warm. CDP test connection adds overhead. Working-set sums can double-count shared pages. This is not a clean-machine, cold-boot, battery, or hotkey-latency certification.",
+  "cleanExit": true
+}

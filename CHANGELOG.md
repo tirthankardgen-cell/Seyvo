@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.4 — unreleased
+## 0.1.4 — validation
 
 Add experimental near-caret and custom percentage-based bubble placement, with work-area bounds, above-caret placement near the bottom edge and a bottom fallback when caret geometry is unavailable. Native capture obtains only caret rectangles; it never reads field text. Add a microphone-free bubble preview that cannot hide a newer recording.
 

@@ -4,9 +4,9 @@
 
 A Windows voice-dictation utility with your own Google Gemini API key. Use a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
 
-**0.1.3 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture, 41 unit/integration tests, eight Electron scenarios and GitHub Windows CI. Physical microphone discovery/selection/open/stop and clean installed exit also pass; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
+**0.1.4 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture, 49 unit/integration tests, nine Electron scenarios and GitHub Windows CI. Physical microphone discovery/selection/open/stop and clean installed exit also pass; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.3/Seyvo-0.1.3-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.3/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.3)
+[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.4/Seyvo-0.1.4-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.4/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.4)
 
 Install for your Windows account, launch Seyvo, and follow the setup steps below. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
@@ -19,7 +19,7 @@ Install for your Windows account, launch Seyvo, and follow the setup steps below
 - Original-field verification, Unicode-safe clipboard insertion with conditional restoration, direct single-line Unicode option and recoverable output when uncertain.
 - Encrypted API key storage, local dictionary import/export, encrypted opt-in history and no audio files.
 - Sandboxed Electron UI, bounded streaming, cancellation and privacy-conscious diagnostics.
-- Optional sound cues, coding vocabulary, three bubble sizes, dictionary editing and About build information.
+- Optional sound cues, coding vocabulary, three bubble sizes, top/bottom/near-caret/custom placement, dictionary editing and About build information.
 
 Seyvo has no subscription, account, telemetry backend or proprietary transcription proxy. **Google API charges, quotas, account geography and [data terms](https://ai.google.dev/gemini-api/terms) apply.** Audio goes to Google during dictation. This is not offline transcription. See [pricing](https://ai.google.dev/gemini-api/docs/pricing) and [privacy](PRIVACY.md).
 
@@ -65,3 +65,5 @@ See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [third-party not
 The [commercial launch notes](docs/commercial-readiness.md) separate MIT reuse rights from support, signing, provider terms and trademark decisions.
 
 The [requirement evidence ledger](docs/requirements-evidence.md) maps the supplied specification to code, tests, observations and remaining acceptance.
+
+The [0.1.4 security review and remediation](docs/security-review-0.1.4.md) records the fixed cancellation race. [Packaged performance measurements](docs/performance.md) document the method and its limits.
