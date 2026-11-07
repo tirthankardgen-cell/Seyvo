@@ -38,6 +38,8 @@
   !macroend
 
   !macro customInstall
+    ; Launch the executable even when a previous Start menu link is stale.
+    StrCpy $launchLink "$appExe"
     ${If} ${isNoDesktopShortcut}
       StrCpy $seyvoDesktopShortcut ${BST_UNCHECKED}
     ${EndIf}
@@ -49,5 +51,20 @@
       WinShell::UninstShortcut "$newDesktopLink"
       Delete "$newDesktopLink"
     ${EndIf}
+  !macroend
+
+  !macro customFinishPage
+    Function SeyvoLaunchAfterSetup
+      ; Setup is per-user and never elevated. Launch directly as this user;
+      ; shell-link resolution must not prevent opening the installed app.
+      Exec '$\"$INSTDIR\${APP_EXECUTABLE_FILENAME}$\"'
+      ${If} ${Errors}
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Seyvo was installed, but could not be opened. Start it from the desktop or Start menu shortcut."
+      ${EndIf}
+    FunctionEnd
+    !define MUI_FINISHPAGE_RUN
+    !define MUI_FINISHPAGE_RUN_TEXT "Run Seyvo"
+    !define MUI_FINISHPAGE_RUN_FUNCTION SeyvoLaunchAfterSetup
+    !insertmacro MUI_PAGE_FINISH
   !macroend
 !endif
