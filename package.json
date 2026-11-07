@@ -24,6 +24,7 @@
     "dist:win": "npm run build && node node_modules/electron/install.js && node scripts/package.mjs",
     "test:native": "npm run build:native && node scripts/test-native.mjs",
     "test:packaged": "node scripts/test-packaged.mjs",
+    "test:files": "node scripts/test-file-dialogs.mjs",
     "benchmark:win": "node scripts/benchmark.mjs",
     "supply-chain": "node scripts/supply-chain.mjs",
     "checksums": "node scripts/checksums.mjs",
