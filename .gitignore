@@ -20,3 +20,4 @@ output/playwright/
 native-win/bin/
 native-win/obj/
 !docs/assets/
+desktop.ini
