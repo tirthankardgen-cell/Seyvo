@@ -20,6 +20,7 @@ The installed 0.1.4 helper exactly preserved multilingual single-line Unicode in
 | Text duplicated after retry | SendInput cannot prove whether the app accepted paste. Always inspect the destination before retrying. |
 | Finalization timeout | Recovery contains committed segments; final words may be missing. Copy them if needed before starting the next dictation or dismissing. The next dictation never replays incomplete output. |
 | Native helper unavailable | Restart Seyvo, verify packaged resources/antivirus quarantine with the publisher, and consult release checks. |
+| Setup cannot find Seyvo.lnk | Install the current 0.1.6 build. Its Finish action launches the installed executable directly. Desktop shortcut and Run Seyvo are checked by default and can be unchecked. |
 | Closing keeps process alive | Default close-to-tray behavior. Use Quit Seyvo to release all resources and exit. |
 | History disappeared | It defaults off and is deleted when disabled; configured age/count retention also applies. It is encrypted for the current Windows account. |
 

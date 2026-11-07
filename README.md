@@ -4,13 +4,13 @@
 
 A Windows voice-dictation utility with your own Google Gemini API key. Use a global shortcut, speak naturally, and insert finalized text into a supported application without submitting it.
 
-**0.1.4 validation build:** the installed Windows app has passed live Google transcription and insertion using a generated speech fixture, 49 unit/integration tests, nine Electron scenarios and GitHub Windows CI. Physical microphone discovery/selection/open/stop and clean installed exit also pass; live human speech and the broader compatibility matrix remain acceptance gates. The installer is unsigned. Check the [release record](tests/manual-windows-qa.md) and [GitHub Releases](https://github.com/tirthankardgen-cell/Seyvo/releases) before deployment.
+**0.1.6 validation build:** shortcut saves now show confirmation, and the next dictation starts fresh without dismissing old results. The installed app passed two consecutive generated-speech sessions through real Google and native Windows insertion, 51 unit/integration tests, 11 Electron scenarios and Windows CI. Physical microphone discovery/selection/open/stop also passed; the user reported successful human dictation separately. The installer is unsigned, and wider acceptance remains open. See the [release record](tests/manual-windows-qa.md).
 
-[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.4/Seyvo-0.1.4-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.4/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.4)
+[Download the Windows x64 installer](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.6/Seyvo-0.1.6-windows-x64-setup.exe) · [SHA256 checksums](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.6/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.6)
 
-Install for your Windows account, launch Seyvo, and follow the setup steps below. This is an evaluation prerelease; it is not a signed, stable commercial release.
+Install for your Windows account and follow the setup steps below. **Create a desktop shortcut** and **Run Seyvo** are checked by default; either can be unchecked. Clicking Finish opens Seyvo with the microphone off. This is an evaluation prerelease; it is not a signed, stable commercial release.
 
-![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard.png)
+![Dashboard in the installed Windows app, with microphone off](docs/assets/dashboard-0.1.6.png)
 
 ## What is implemented
 
@@ -43,6 +43,7 @@ npm run dist:win
 2. With Windows default selected, run **Test microphone** to discover inputs. Stop the test, choose your preferred microphone and test it locally. Configure a safe shortcut; default is **Ctrl + Shift + Space**.
 3. Put the caret in a supported field in another application. Press the shortcut, speak, and press it again to finish. Escape cancels.
 4. Check the target. If input was blocked or cannot be confirmed, open Seyvo from the tray to copy or retry. Check for existing text before retrying. Seyvo never sends Enter.
+5. Press the shortcut again for a fresh dictation. It replaces the last in-memory result without replaying it. Copy any unsuccessful result first if you need to keep it; history stays off unless enabled.
 
 Closing the window keeps the tray app running by default; choose **Quit Seyvo** to exit. History is off until enabled. Manual updates use the real GitHub Releases page; no updates are installed automatically.
 
@@ -52,7 +53,7 @@ Closing the window keeps the tray app running by default; choose **Quit Seyvo** 
 
 ## Compatibility and limitations
 
-Initial development targets Windows 11 x64; the full [Windows matrix](tests/manual-windows-qa.md) records what was actually tested. Windows 10 support requires runtime and installation validation. ARM64 and push-to-talk are not shipped. No guarantee for administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Insertion cannot universally be acknowledged by other apps, so Seyvo keeps the transcript for recovery.
+Initial development targets Windows 11 x64; the full [Windows matrix](tests/manual-windows-qa.md) records what was actually tested. Windows 10 support requires runtime and installation validation. ARM64 and push-to-talk are not shipped. No guarantee for administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Insertion cannot universally be acknowledged by other apps, so Seyvo keeps the transcript available until the next dictation, Dismiss or exit.
 
 Installed single-line Unicode input has also passed in Edge, Word, VS Code and the logged-out ChatGPT web composer. The [target acceptance record](docs/target-acceptance-0.1.4.md) lists the exact versions/configurations, unsafe-target refusals and remaining clipboard/variant checks.
 

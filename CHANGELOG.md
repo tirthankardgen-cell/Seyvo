@@ -6,7 +6,7 @@ Make repeated dictation work without dismissing the last result. After native in
 
 Confirm shortcut saves, show the active or paused binding, disable Save after success, and validate incomplete combinations before submission. Failed rebinds retain the previous shortcut and visibly explain the conflict. Keep error/recovery bubbles visible until handled; distinguish local microphone tests and no-speech results from successful input.
 
-The interactive installer now selects Create a desktop shortcut and Run Seyvo by default. Both choices remain user-controlled; completing setup launches the app when Run is selected. Unattended installs honor the no-desktop-shortcut option.
+The interactive installer now selects Create a desktop shortcut and Run Seyvo by default. Both choices remain user-controlled; completing setup launches the app when Run is selected. Launch the installed executable directly so a missing or unresolved Start menu shortcut cannot prevent startup. Unattended installs honor the no-desktop-shortcut option.
 
 ## 0.1.5 — validation
 

@@ -4,9 +4,11 @@ Fix the repeat-dictation workflow. After Windows input is sent, Seyvo returns to
 
 Shortcut saves now show confirmation, disable Save after success and display the active or paused binding. Invalid combinations receive guidance; a conflict keeps the previous working shortcut and explains the refusal. Microphone levels retain fractional RMS feedback. Error and recovery bubbles stay visible until handled, while local microphone tests and no-speech results have distinct labels.
 
-Create a desktop shortcut and Run Seyvo are selected by default in interactive setup. Either option can be unchecked. The app opens when setup finishes with Run selected; the microphone stays off until explicit activation.
+Create a desktop shortcut and Run Seyvo are selected by default in interactive setup. Either option can be unchecked. Finish launches the installed executable directly, avoiding the missing Start menu shortcut error observed during setup testing. The microphone stays off until explicit activation.
 
 Source validation passed typecheck, lint, production build, 51 unit/integration tests and 11 Electron scenarios. The repeat-session regression uses the real coordinator and Windows input with synthetic capture/provider events. The release record separates these tests from installed live-Google and physical-microphone observations. No test records credentials, private transcripts or audio.
+
+Installed build `3b65c52eb47a` passed two consecutive generated-speech sessions through the actual recorder worklet, real Google and native Windows input: 55 characters followed by 55 more, exactly matching the finalized output. Both returned to Ready with microphone off and clean app exit. Physical microphone discovery/selection/open/stop and packaged security checks also passed. Interactive installer tests verified both checked defaults and both opt-outs, desktop target, direct application launch, and unchanged encrypted key/preferences. [Windows CI](https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42348439528) passed for the release source.
 
 This is an unsigned prerelease, not a stable commercial launch. Wider English/Hindi/Hinglish, fresh-machine and physical Windows compatibility checks, signing and owner-controlled brand/provider launch decisions remain gates. “Text sent” describes the Windows input attempt; another application's acceptance is not universally observable. Check the destination before retrying. Seyvo never submits a field or silently switches insertion methods.
 
