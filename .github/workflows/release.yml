@@ -6,6 +6,11 @@ on:
         description: Existing semantic tag matching package.json (for example v0.1.0)
         required: true
         type: string
+      require_signatures:
+        description: Require a trusted timestamped signature from the approved publisher
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -43,6 +48,18 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
       - run: npm run checksums
+      - name: Verify publisher signatures
+        shell: pwsh
+        env:
+          REQUIRE_SIGNATURES: ${{ inputs.require_signatures }}
+          EXPECTED_SIGNER_SUBJECT: ${{ vars.SEYVO_SIGNER_SUBJECT }}
+        run: |
+          if ($env:REQUIRE_SIGNATURES -eq 'true') {
+            if ([string]::IsNullOrWhiteSpace($env:EXPECTED_SIGNER_SUBJECT)) { throw 'Configure the approved SEYVO_SIGNER_SUBJECT in the release environment.' }
+            & ./scripts/verify-signatures.ps1 -ExpectedSubject $env:EXPECTED_SIGNER_SUBJECT
+          } else {
+            & ./scripts/verify-signatures.ps1 -AllowUnsigned
+          }
       - run: npm run scan:secrets -- dist/win-unpacked/resources/app.asar
       - name: Create reviewable draft prerelease
         shell: pwsh

@@ -1,0 +1,15 @@
+# 0.1.7 security review
+
+Codex Security diff scan `661a0bd1-dcf0-4323-8e12-a0ace1df671e` completed on 7 November 2026. It reviewed immutable source `7128c2cb20ceeb1467935fbf06864bb1752f3bc5` through installed release source `468d3f3c0e3f0922b4e8ecb5d18ce1d626e98ff3`, retaining the baseline threat model. All 44 changed files were accounted for, including configuration, tests, documentation and four inspected screenshots. Three independent review workers covered native, main/UI, and distribution changes; the parent reviewed supporting documentation and validation.
+
+**No new reportable vulnerability was found in this diff.** This is an AI-assisted source review with a small synthetic diagnostic reproduction, not a third-party penetration-test certification or a runtime acceptance claim. Dependency implementations, private profiles, keys, clipboard data, recordings and generated binaries were excluded. The documented final-focus race and inability to prove every third-party application's input acceptance remain limitations.
+
+The review confirmed that the pending-delivery identity fixes the earlier cancellation-during-history-write race. Expanded clipboard snapshots keep opaque payload bounds, original target checks, one-shot delivery, sequence/owner restoration and explicit refusal. Recovery replacement does not enable history or copy old words. Startup and window shutdown changes retain main-process authority and narrow IPC.
+
+One developer-test concern was investigated: an unequal raw text assertion in the opt-in occupied-clipboard test could print actual field contents. Running the exact original assertion with a synthetic sentinel confirmed the diagnostic behavior. A delayed Windows paste of private clipboard contents was not reproduced, and no lower-privilege attacker path was established. The scan's final policy decision excluded this operator-only concern from reportable vulnerabilities; it was not silently dropped or described as a production exploit.
+
+The follow-up tooling fix compares text without attaching either value to errors. A regression launches Node with a mismatching synthetic clipboard/transcript pair and checks that neither appears in output; a matching multilingual control passes. The live runner also avoids cancelling/dismissing a pre-existing session when its preconditions fail, and reports spoken-prompt comparisons separately from exact insertion. These follow-up changes are outside the immutable reviewed release; they do not alter the installed app.
+
+Preflight passed all three evaluated capabilities. Daybreak access was `unknown`, with no programs returned. Scanner-attributed usage was 6,116,628 total tokens across five threads, including 5,829,597 cached input tokens; these are the scanner's accounting figures, not an application performance measure.
+
+Signing, clean-machine installation, physical display/device/accessibility tests and owner brand/provider decisions remain separate release gates. See [Windows QA](../tests/manual-windows-qa.md) and [signing policy](code-signing.md).

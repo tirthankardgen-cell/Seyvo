@@ -86,6 +86,12 @@ See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [third-party not
 
 The [commercial launch notes](docs/commercial-readiness.md) separate MIT reuse rights from support, signing, provider terms and trademark decisions.
 
+Our [Code signing policy](docs/code-signing.md) explains the current unsigned status, the free SignPath Foundation application route, and strict publisher/timestamp verification. Signing approval is pending; no sponsorship or signed release is claimed.
+
+The [0.1.7 security review](docs/security-review-0.1.7.md) covers all changes through the installed release and documents the subsequent test-diagnostic privacy fix.
+
+Later installed acceptance matched short human English, Hindi and Hinglish prompts and verified exact paste with clipboard restoration. [0.1.7 target tests](docs/target-acceptance-0.1.7.md) also cover multilingual multiline paste in Edge, Word and VS Code. The [QA record](tests/manual-windows-qa.md) includes attempt-specific limits; the current source passes 53 tests and 11 Electron scenarios. These results do not replace signing or clean-machine/physical/accessibility acceptance.
+
 The [requirement evidence ledger](docs/requirements-evidence.md) maps the supplied specification to code, tests, observations and remaining acceptance.
 
 The [0.1.4 security review and remediation](docs/security-review-0.1.4.md) records the fixed cancellation race. [Packaged performance measurements](docs/performance.md) document the method and its limits.

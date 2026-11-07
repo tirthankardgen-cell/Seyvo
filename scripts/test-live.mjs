@@ -8,11 +8,40 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { quitTestedApp } from './quit-tested-app.mjs';
 
-const human = process.argv.includes('--human');
+const humanMatrix = process.argv.includes('--human-matrix');
+const human = humanMatrix || process.argv.includes('--human');
+const requestedHumanLanguage = process.argv
+  .find((argument) => argument.startsWith('--human-language='))
+  ?.split('=')[1];
+const prompts = [
+  { language: 'English', sentence: 'The blue notebook is beside the window.' },
+  {
+    language: 'Hindi',
+    sentence: 'मेरी नीली किताब खिड़की के पास है।',
+    spoken: 'Meri neeli kitaab khidki ke paas hai.',
+    roman: [
+      'Meri neeli kitaab khidki ke paas hai.',
+      'Meri neeli kitab khidki ke paas hai.',
+      'Meri nili kitab khidki ke paas hai.',
+    ],
+  },
+  { language: 'Hinglish', sentence: 'Please kal subah meeting ka reminder set kar dena.' },
+].filter(
+  (prompt) =>
+    !requestedHumanLanguage ||
+    prompt.language.toLowerCase() === requestedHumanLanguage.toLowerCase(),
+);
+assert.ok(prompts.length > 0, 'Choose English, Hindi or Hinglish for --human-language.');
+const normalizePrompt = (text) =>
+  text
+    .normalize('NFC')
+    .replace(/[\p{P}\p{Z}\s]/gu, '')
+    .toLowerCase();
+const operator = humanMatrix ? createInterface({ input: process.stdin }) : undefined;
 const hardware = human || process.argv.includes('--hardware');
 const development = process.argv.includes('--development');
 const caretPlacement = process.argv.includes('--caret');
-const repeats = process.argv.includes('--repeat') ? 2 : 1;
+const repeats = humanMatrix ? prompts.length : process.argv.includes('--repeat') ? 2 : 1;
 const insertionMethod = process.argv.includes('--paste') ? 'paste' : 'unicode';
 const imageClipboard = process.argv.includes('--image-clipboard');
 const clipboardKind = imageClipboard
@@ -70,14 +99,19 @@ async function command(value) {
   return next();
 }
 let browser, page, settings;
+let ownsSession = false;
 async function waitPhase(phases) {
-  const deadline = Date.now() + 20000;
+  const deadline = Date.now() + 30000;
+  let observed;
   while (Date.now() < deadline) {
     const status = await page.evaluate(() => window.seyvo.status());
+    observed = { phase: status.phase, microphoneActive: status.microphoneActive };
     if (phases.includes(status.phase)) return status;
     await new Promise((done) => setTimeout(done, 100));
   }
-  throw new Error('Timed out waiting for dictation state.');
+  throw new Error(
+    `Timed out waiting for dictation state (${observed?.phase}, microphone ${observed?.microphoneActive ? 'on' : 'off'}).`,
+  );
 }
 const report = {
   packaged: !development,
@@ -118,7 +152,10 @@ try {
     false,
     'Turn history off before this synthetic test.',
   );
+  ownsSession = true;
   settings = initial.settings;
+  report.languageHints = initial.settings.languages;
+  report.transcriptionMode = initial.settings.mode;
   const connected = await page.evaluate(() => window.seyvo.testKey());
   assert.equal(connected.ok, true, connected.error);
   report.googleSetup = 'passed';
@@ -140,6 +177,25 @@ try {
   let cumulative = '';
   report.sessions = [];
   for (let cycle = 0; cycle < repeats; cycle++) {
+    if (humanMatrix) {
+      console.log(
+        `READY ${prompts[cycle].language}: ${prompts[cycle].spoken ?? prompts[cycle].sentence}`,
+      );
+      console.log(
+        'Press Enter to begin this 15-second recording. No audio is captured while waiting.',
+      );
+      await new Promise((done, fail) => {
+        const timer = setTimeout(() => {
+          operator.removeListener('line', ready);
+          fail(new Error('Operator readiness timed out.'));
+        }, 180000);
+        function ready() {
+          clearTimeout(timer);
+          done();
+        }
+        operator.once('line', ready);
+      });
+    }
     assert.equal(
       await command('focus'),
       'focused',
@@ -185,11 +241,16 @@ try {
     // Explicitly select only this runner's owned field before sending Stop.
     // Production capture, caret identity and refusal checks remain unchanged.
     assert.equal(await command('focus'), 'focused', 'Could not reselect the owned test field.');
-    assert.equal(
-      await command('shortcut'),
-      'shortcut-sent',
-      'Stop requires the original test window to remain foreground.',
-    );
+    if (humanMatrix) {
+      const stopped = await page.evaluate(() => window.seyvo.action('stop'));
+      assert.equal(stopped.ok, true, stopped.error);
+    } else {
+      assert.equal(
+        await command('shortcut'),
+        'shortcut-sent',
+        'Stop requires the original test window to remain foreground.',
+      );
+    }
     const result = await waitPhase(['recovery', 'error', 'idle']);
     assert.equal(result.microphoneActive, false);
     assert.equal(result.phase, 'idle', result.message);
@@ -205,7 +266,12 @@ try {
       recognizedCharacters: result.recovery.length,
       insertedCharacters: inserted.length,
       matchesFinal: inserted === cumulative,
-      expectedWords: /lighthouse/i.test(result.recovery) && /blue river/i.test(result.recovery),
+      ...(!human
+        ? {
+            expectedWords:
+              /lighthouse/i.test(result.recovery) && /blue river/i.test(result.recovery),
+          }
+        : {}),
     };
     assert.ok(
       human
@@ -217,7 +283,23 @@ try {
       inserted === cumulative,
       'The target did not receive exactly the consecutive finalized text.',
     );
-    report.sessions.push({ cycle: cycle + 1, ...report.textChecks, phase: result.phase });
+    report.sessions.push({
+      cycle: cycle + 1,
+      ...report.textChecks,
+      phase: result.phase,
+      ...(humanMatrix
+        ? {
+            language: prompts[cycle].language,
+            // Punctuation/case differences are ignored, never the actual text.
+            matchesSpokenPrompt: [prompts[cycle].sentence, ...(prompts[cycle].roman ?? [])].some(
+              (expected) => normalizePrompt(result.recovery) === normalizePrompt(expected),
+            ),
+            hasDevanagari: /[\u0900-\u097f]/u.test(result.recovery),
+            hasLatin: /[a-z]/i.test(result.recovery),
+          }
+        : {}),
+    });
+    if (humanMatrix) console.log(JSON.stringify(report.sessions.at(-1)));
     if (clipboardKind) {
       assert.equal(
         await command(`clipboard-${clipboardKind}-unchanged`),
@@ -226,19 +308,27 @@ try {
       report.clipboardPreserved = clipboardKind;
     }
   }
-  report.globalShortcut = 'started and stopped using real Windows key events';
+  report.globalShortcut = humanMatrix
+    ? 'started using real Windows F8; stopped through the normal main-process Stop action'
+    : 'started and stopped using real Windows key events';
   report.insertion = 'recognized test sentence reached original native text field';
   report.microphoneAfterStop = 'off';
   report.transcriptLogged = false;
-  report.result = 'passed';
+  report.pipelineResult = 'passed';
+  report.result =
+    humanMatrix && report.sessions.some((session) => !session.matchesSpokenPrompt)
+      ? 'partial: insertion passed; spoken prompt needs review'
+      : 'passed';
 } catch (error) {
   report.result = 'failed';
   report.error = error.message;
   process.exitCode = 1;
 } finally {
   if (page) {
-    await page.evaluate(() => window.seyvo.action('cancel')).catch(() => {});
-    await page.evaluate(() => window.seyvo.action('dismiss')).catch(() => {});
+    if (ownsSession) {
+      await page.evaluate(() => window.seyvo.action('cancel')).catch(() => {});
+      await page.evaluate(() => window.seyvo.action('dismiss')).catch(() => {});
+    }
     if (settings) {
       const { shortcut, insertion, paused, deviceId, overlayPosition, showOverlay, captions } =
         settings;
@@ -260,6 +350,8 @@ try {
     } catch {
       report.result = 'failed';
       report.error = 'The tested app did not exit cleanly.';
+      report.exitCode = child.exitCode;
+      report.exitSignal = child.signalCode;
       process.exitCode = 1;
     }
   }
@@ -267,9 +359,10 @@ try {
   child.kill();
   host.kill();
   lines.close();
+  operator?.close();
   await mkdir('artifacts/live', { recursive: true });
   await writeFile(
-    `artifacts/live/${human ? 'spoken-microphone' : hardware ? 'microphone' : 'recorded-speech'}.json`,
+    `artifacts/live/${human ? 'spoken-microphone' + (requestedHumanLanguage ? '-' + prompts[0].language.toLowerCase() : '') : hardware ? 'microphone' : 'recorded-speech'}.json`,
     JSON.stringify(report, null, 2),
   );
   console.log(JSON.stringify(report, null, 2));

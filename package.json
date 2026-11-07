@@ -28,6 +28,7 @@
     "benchmark:win": "node scripts/benchmark.mjs",
     "supply-chain": "node scripts/supply-chain.mjs",
     "checksums": "node scripts/checksums.mjs",
+    "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1",
     "scan:secrets": "node scripts/scan-secrets.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build"
   },

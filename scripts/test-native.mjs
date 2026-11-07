@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
+import { assertPrivateText } from './private-text.mjs';
 await mkdir('artifacts/native', { recursive: true });
 const compiler = join(process.env.WINDIR, 'Microsoft.NET/Framework64/v4.0.30319/csc.exe');
 const compiled = spawnSync(
@@ -92,7 +93,7 @@ try {
   assert.equal(direct.ok, true, JSON.stringify(direct));
   await new Promise((resolve) => setTimeout(resolve, 200));
   host.send('text');
-  assert.equal(Buffer.from(await host.next(), 'base64').toString(), directText);
+  assertPrivateText(Buffer.from(await host.next(), 'base64').toString(), directText);
   results.push('PASS: real SendInput Unicode injection; Hindi and emoji preserved.');
   const caretChanged = await call('insert', {
     token: target.result.token,
@@ -115,7 +116,7 @@ try {
     assert.equal(pasted.ok, true, JSON.stringify(pasted));
     assert.equal(pasted.result.restored, true);
     host.send('text');
-    assert.equal(
+    assertPrivateText(
       Buffer.from(await host.next(), 'base64')
         .toString()
         .replaceAll('\r\n', '\n'),
@@ -178,7 +179,7 @@ try {
       assert.equal(imagePaste.ok, true, JSON.stringify(imagePaste));
       assert.equal(imagePaste.result.restored, true);
       host.send('text');
-      assert.equal(
+      assertPrivateText(
         Buffer.from(await host.next(), 'base64')
           .toString()
           .replaceAll('\r\n', '\n'),
