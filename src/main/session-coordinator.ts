@@ -38,6 +38,9 @@ export class SessionCoordinator {
     local: boolean;
   };
   private recoveryTarget?: Target;
+  // Delivery remains cancellable after microphone/provider cleanup, including
+  // while encrypted history is being written. Never reuse it for a later session.
+  private pendingDelivery?: string;
   private insertionOperation?: Promise<void>;
   private cleanupOperation?: Promise<void>;
   private timer?: NodeJS.Timeout;
@@ -48,7 +51,7 @@ export class SessionCoordinator {
     this.ports.changed();
   }
   get busy(): boolean {
-    return Boolean(this.session);
+    return Boolean(this.session || this.pendingDelivery);
   }
   async start(local = false): Promise<void> {
     if (this.busy || this.cleanupOperation || !['idle', 'error', 'recovery'].includes(this.phase))
@@ -182,16 +185,22 @@ export class SessionCoordinator {
       const text = current.settings.trimWhitespace ? final.text.trim() : final.text;
       this.recovery = text;
       this.recoveryTarget = current.target;
+      this.pendingDelivery = current.id;
       await this.cleanup(current);
+      if (this.pendingDelivery !== current.id) return;
       if (!text.trim()) {
+        this.pendingDelivery = undefined;
         this.recovery = '';
         this.change('idle', 'No finalized speech was received. Nothing was inserted.');
         return;
       }
       await this.ports.saveHistory(text, this.targetApp).catch(() => {
-        this.message = 'Could not save history. Current text remains available.';
+        if (this.pendingDelivery === current.id)
+          this.message = 'Could not save history. Current text remains available.';
       });
+      if (this.pendingDelivery !== current.id) return;
       if (!final.complete) {
+        this.pendingDelivery = undefined;
         if (current.settings.soundCues) this.ports.cue('error');
         this.change(
           'recovery',
@@ -201,16 +210,21 @@ export class SessionCoordinator {
       }
       if (current.settings.insertion === 'copy') {
         this.ports.copy(text);
+        this.pendingDelivery = undefined;
         this.change(
           'recovery',
           'Copied. Paste when you are ready; your previous clipboard was replaced.',
         );
         return;
       }
+      this.pendingDelivery = undefined;
       await this.insert(current.settings.insertion);
     } catch (error) {
       if (this.session === current) await this.fail(error);
-      else this.change('recovery', publicError(error));
+      else if (this.pendingDelivery === current.id) {
+        this.pendingDelivery = undefined;
+        this.change('recovery', publicError(error));
+      }
     }
   }
   async retry(): Promise<void> {
@@ -250,6 +264,7 @@ export class SessionCoordinator {
   async cancel(): Promise<void> {
     if (this.phase === 'inserting')
       throw new AppError('An insertion transaction is already in progress.');
+    this.pendingDelivery = undefined;
     if (this.session) {
       const current = this.session;
       await this.cleanup(current);

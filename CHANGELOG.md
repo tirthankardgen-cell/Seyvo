@@ -6,6 +6,8 @@ Add experimental near-caret and custom percentage-based bubble placement, with w
 
 Persist custom coordinates with bounded validation and migration defaults. Extend geometry, native caret, settings/restart and preview lifecycle coverage. Make Electron test shutdown release its pending debugger request before quitting. Add a packaged Windows startup/idle benchmark with explicit measurement limits.
 
+Fix a cancellation race found during the independent source review: cancelling or quitting while history is being saved now revokes pending clipboard/native delivery. A delayed storage failure cannot overwrite a newer session. Regression tests reproduced the issue before the fix in all three insertion modes.
+
 ## 0.1.3 — validation
 
 Discover microphones through the authorized recorder so Settings can offer real input devices without granting the dashboard microphone permission. Keep device discovery local and bounded, preserve a saved selection before discovery, and refresh available inputs during capture.

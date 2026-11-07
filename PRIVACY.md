@@ -15,9 +15,13 @@ Effective date: 7 November 2026. Applies to the source distribution and 0.1 deve
 | Target metadata | Window/process/focus/caret identity is captured to prevent misdirected insertion. Seyvo does not read the target field's text, window title, screenshots or unrelated keystrokes. |
 | Clipboard | Clipboard paste temporarily writes finalized text and restores supported prior formats when the clipboard sequence is unchanged. Copy, paste test, history-copy and diagnostics-copy intentionally replace clipboard contents. Other applications, clipboard managers and Windows clipboard history may observe clipboard text. |
 
+Expired history entries are hidden when history is read and removed from the encrypted file on the next history or settings write. There is no timer that erases ciphertext at the exact expiry time. Clear history or disable it to delete the current encrypted history file and recovery journal immediately.
+
 ## Google's processing
 
 An internet connection and Google account/API key are required for dictation. Audio, vocabulary and authentication are transmitted to Google over TLS. Google controls its service logs, retention, model processing, account geography and free/paid tier data treatment. Review [Gemini terms](https://ai.google.dev/gemini-api/terms), [Google privacy](https://policies.google.com/privacy) and [pricing](https://ai.google.dev/gemini-api/docs/pricing) before use. Seyvo does not claim cloud transcription is offline, free of API charges or exclusively local.
+
+The key/model test sends the current language hints and dictionary in Google setup, just as dictation setup does; it does not capture or send microphone audio.
 
 ## Control and deletion
 

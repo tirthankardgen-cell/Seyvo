@@ -37,6 +37,80 @@ function fixture() {
   return { settings, provider, ports, coordinator: new SessionCoordinator(ports) };
 }
 describe('single session authority', () => {
+  it.each(['paste', 'unicode', 'copy'] as const)(
+    'cancellation revokes %s delivery while history persistence is pending',
+    async (method) => {
+      const f = fixture();
+      f.settings.insertion = method;
+      f.settings.historyEnabled = true;
+      let persisted!: () => void;
+      vi.mocked(f.ports.saveHistory).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            persisted = resolve;
+          }),
+      );
+      await f.coordinator.start();
+      const stopping = f.coordinator.stop();
+      await vi.waitFor(() => expect(f.ports.saveHistory).toHaveBeenCalledOnce());
+      await f.coordinator.cancel();
+      const cancelledMessage = f.coordinator.message;
+      persisted();
+      await stopping;
+      expect(f.ports.insert).not.toHaveBeenCalled();
+      expect(f.ports.copy).not.toHaveBeenCalled();
+      expect(f.coordinator.message).toBe(cancelledMessage);
+      expect(f.coordinator.recovery).toContain('नमस्ते');
+      expect(f.coordinator.busy).toBe(false);
+      expect(f.coordinator.microphoneActive).toBe(false);
+    },
+  );
+  it('shutdown revokes pending delivery without waiting for history storage', async () => {
+    const f = fixture();
+    let persisted!: () => void;
+    vi.mocked(f.ports.saveHistory).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          persisted = resolve;
+        }),
+    );
+    await f.coordinator.start();
+    const stopping = f.coordinator.stop();
+    await vi.waitFor(() => expect(f.ports.saveHistory).toHaveBeenCalledOnce());
+    expect(f.coordinator.busy).toBe(true);
+    expect(() => f.coordinator.dismiss()).toThrow('active operation');
+    await f.coordinator.shutdown();
+    persisted();
+    await stopping;
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    expect(f.ports.copy).not.toHaveBeenCalled();
+    expect(f.coordinator.busy).toBe(false);
+  });
+  it('a cancelled history failure cannot overwrite a later recording or deliver stale text', async () => {
+    const f = fixture();
+    let failed!: (error: Error) => void;
+    vi.mocked(f.ports.saveHistory).mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          failed = reject;
+        }),
+    );
+    await f.coordinator.start();
+    const stopping = f.coordinator.stop();
+    await vi.waitFor(() => expect(f.ports.saveHistory).toHaveBeenCalledOnce());
+    await f.coordinator.cancel();
+    f.coordinator.dismiss();
+    await f.coordinator.start(true);
+    const nextMessage = f.coordinator.message;
+    failed(new Error('Synthetic disk failure'));
+    await stopping;
+    expect(f.coordinator.phase).toBe('listening');
+    expect(f.coordinator.message).toBe(nextMessage);
+    expect(f.coordinator.microphoneActive).toBe(true);
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    expect(f.ports.copy).not.toHaveBeenCalled();
+    await f.coordinator.cancel();
+  });
   it('honors opt-in cues without duplicates, and only plays stop after microphone drain', async () => {
     const f = fixture();
     f.settings.soundCues = true;

@@ -88,3 +88,11 @@ The public [v0.1.3 release](https://github.com/tirthankardgen-cell/Seyvo/release
 ## Release gate
 
 Source and an explicitly labelled unsigned validation prerelease may be shared. Do not promote a stable commercial release until live human speech, relevant target applications, clean-machine installation and the chosen support matrix are accepted, and the owner addresses signing and brand clearance.
+
+## 0.1.4 source acceptance
+
+Typecheck, lint, production build, 49 unit/integration tests and all nine Electron scenarios passed. Near-caret/custom placement, safe fallback/bounds, native caret geometry, custom coordinate persistence, no-microphone preview and preview/recording races are covered. The post-fix E2E run completed in 47.1 seconds.
+
+The Codex Security Standard scan of revision `7128c2cb20ceeb1467935fbf06864bb1752f3bc5` completed with one low-severity cancellation race. Five regression cases reproduced it before remediation and passed afterward: cancelled paste, Unicode and copy during history persistence, shutdown during persistence, and a late failure after a new recording. A distinct delivery identity now survives capture cleanup and is revoked before pending output. See `docs/security-review-0.1.4.md`; the original scan is not described as a no-findings report.
+
+Native clipboard mutation fixtures continue to require an empty clipboard; occupied user clipboard contents are preserved. The user's physical spoken acceptance remains deferred at their request.

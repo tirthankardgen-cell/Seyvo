@@ -16,7 +16,7 @@ This ledger maps the supplied specification to implementation and evidence. The 
 
 ## Section 6 settings audit
 
-General, Dictation, Personalization, Privacy, Appearance, Troubleshooting and About are implemented. Sound cues are original synthesized 150 ms tones played through the Windows mixer, off by default. Preview reports playback failures; an automatic cue failure does not abort a dictation. Coding vocabulary is opt-in, lists every term, merges behind the user's dictionary and never inspects app contents. Bubble size offers compact/standard/large; placement remains top/bottom of the target monitor. The build identifier is compiled from Git and marks modified checkouts.
+General, Dictation, Personalization, Privacy, Appearance, Troubleshooting and About are implemented. Sound cues are original synthesized 150 ms tones played through the Windows mixer, off by default. Preview reports playback failures; an automatic cue failure does not abort a dictation. Coding vocabulary is opt-in, lists every term, merges behind the user's dictionary and never inspects app contents. Bubble size offers compact/standard/large; placement offers top, bottom, near-caret and custom positions. The build identifier is compiled from Git and marks modified checkouts.
 
 Near-caret placement is experimental and uses the activation-time caret with a bottom fallback. Custom placement persists horizontal/vertical percentages and keeps the bubble inside the current work area. Preview shows placement without opening a microphone.
 
