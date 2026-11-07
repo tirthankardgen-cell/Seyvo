@@ -1,4 +1,5 @@
 import { expect, type ElectronApplication } from '@playwright/test';
+import { terminateTestProcess } from '../../scripts/terminate-test-process.mjs';
 
 /** Exercise the app's own graceful quit before disposing Playwright's context. */
 export async function quitApp(app: ElectronApplication): Promise<void> {
@@ -12,7 +13,7 @@ export async function quitApp(app: ElectronApplication): Promise<void> {
       await expect.poll(() => child.exitCode, { timeout: 10000 }).toBe(0);
     } finally {
       // A failed exit assertion must not strand this owned test process.
-      if (child.exitCode === null) child.kill();
+      terminateTestProcess(child);
     }
-  }
+  } else expect(child.exitCode, 'The tested app must not exit with an error.').toBe(0);
 }

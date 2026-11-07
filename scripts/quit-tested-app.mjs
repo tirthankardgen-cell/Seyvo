@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { terminateTestProcess } from './terminate-test-process.mjs';
 
 export async function quitTestedApp(page, child, browser) {
   let timer;
@@ -20,7 +21,10 @@ export async function quitTestedApp(page, child, browser) {
     } else assert.equal(child.exitCode, 0, 'Tested app exited unexpectedly.');
   } finally {
     clearTimeout(timer);
-    if (child.exitCode === null) child.kill();
-    await browser?.close().catch(() => {});
+    try {
+      terminateTestProcess(child);
+    } finally {
+      await browser?.close().catch(() => {});
+    }
   }
 }

@@ -207,18 +207,28 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
         (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
       );
       await expect
-        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase, {
-          timeout: 20000,
-        })
-        .toBe('listening');
+        .poll(
+          () =>
+            page.evaluate(async () => {
+              const { phase, message } = await window.seyvo.status();
+              return `${phase}: ${message}`;
+            }),
+          { timeout: 20000 },
+        )
+        .toMatch(/^listening:/);
       expect((await page.evaluate(() => window.seyvo.status())).recovery).toBe('');
       expect(await dashboardVisible()).toBe(false);
       await app.evaluate(() =>
         (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
       );
       await expect
-        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
-        .toBe('idle');
+        .poll(async () =>
+          page.evaluate(async () => {
+            const { phase, message } = await window.seyvo.status();
+            return `${phase}: ${message}`;
+          }),
+        )
+        .toMatch(/^idle:/);
       target.stdin!.write('text\n');
       expect(Buffer.from((await lines.next()).value!, 'base64').toString()).toBe(
         'Automatic native insertion fixture.'.repeat(cycle),

@@ -2,6 +2,8 @@
 
 Seyvo 0.1.7 is currently **unsigned**. No certificate, signing-service approval or verified publisher identity is configured. MIT allows commercial use; it does not make an unsigned binary a signed release. We do not instruct users to disable Windows security controls.
 
+**Application status: submitted, awaiting review.** On 7 November 2026 the maintainer reported submitting Seyvo to the SignPath Foundation and shared its receipt email. The email says the team will respond within the next few business days. Receipt is not approval; no signing credentials or certificate have been issued or configured. The application does not need to be submitted again.
+
 ## Free online option for the owner
 
 [SignPath Foundation](https://signpath.org/) offers free signing for eligible open-source projects. Start at its [online application](https://signpath.org/apply) and read the [current conditions](https://signpath.org/terms). These pages were checked on 7 November 2026. Approval is discretionary, and executable projects need verifiable reputation; a new project is not guaranteed acceptance or immediate service.
@@ -28,7 +30,7 @@ After approval and successful signing, add the attribution required by their ter
 - Build: Windows x64, Node 26.13.0, npm lockfile, Electron and a small C# helper; checked-in build and draft-release workflows.
 - Distribution evidence: versioned installer, SHA256 checksums, dependency SBOM/license inventory, security review and real Windows acceptance records.
 
-The maintainer must supply contact details and attest to project ownership, roles and account security. No application has been submitted by the coding agent.
+The maintainer submitted the application directly. Any follow-up questions about ownership, roles and account security must be answered by the maintainer; the project is now waiting for the Foundation's review. The receipt email's personal details and tracking links are not published here.
 
 ## Verification and other signing providers
 

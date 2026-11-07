@@ -27,7 +27,7 @@ The installed 0.1.4 helper exactly preserved multilingual single-line Unicode in
 | Closing keeps process alive | Default close-to-tray behavior. Use Quit Seyvo to release all resources and exit. |
 | History disappeared | It defaults off and is deleted when disabled; configured age/count retention also applies. It is encrypted for the current Windows account. |
 
-Smart mode uses Google's native cleanup only; no second paid rewrite call. No automatic translation, summarization or chat response. Multilingual quality depends on Google and your audio; Hindi/Hinglish recognition needs empirical acceptance testing. No offline transcription. No fixed API price or unlimited free usage promise.
+Smart mode uses Google's native cleanup only; no second paid rewrite call. No automatic translation, summarization or chat response. Installed 0.1.7 passed the specified human English, Hindi and Hinglish recognition/paste checks. Quality still depends on Google and your audio; those accepted samples are not a universal accuracy guarantee. No offline transcription. No fixed API price or unlimited free usage promise.
 
 Sound cues are off by default. Enable them and use Preview sound cue to check the Windows output device/mixer. Coding vocabulary is opt-in in Dictionary; the complete term list is visible, user terms take priority and the combined provider vocabulary stays within 1,000 entries. Bubble size is compact, standard or large. Captions remain off by default.
 

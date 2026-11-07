@@ -12,7 +12,7 @@ Validation: 51 unit/integration tests and 11 Electron scenarios passed. Native m
 
 Interactive setup keeps Create a desktop shortcut and Run Seyvo checked by default, with working opt-outs. Your encrypted key and preferences are retained on upgrade. The release includes an unsigned x64 installer, checksums, runtime SBOM and license inventory.
 
-This remains an unsigned validation prerelease. Signing, fresh-machine and broader physical/language/accessibility acceptance, and owner-controlled brand/provider launch decisions remain stable-release gates. Another app's acceptance cannot universally be confirmed; inspect the destination before retrying. There is no Seyvo subscription, backend, telemetry or automatic updater.
+This remains an unsigned validation prerelease. Signing, fresh-machine and physical/accessibility acceptance, and owner-controlled brand/provider launch decisions remain stable-release gates. The required English, Hindi and Hinglish checks passed. Another app's acceptance cannot universally be confirmed; inspect the destination before retrying. There is no Seyvo subscription, backend, telemetry or automatic updater.
 
 Final installed source `468d3f3c0e3f` passed two real Google/generated-speech cycles using automatic clipboard paste: 55 characters each, with exact cumulative target text and exact preservation of the original text/HTML clipboard and Chromium metadata. Physical microphone discovery/open/stop, startup persistence/quiet launch, second-instance behavior, production fuses and clean exit also passed. Windows CI: https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42356338693.
 
@@ -20,6 +20,6 @@ Installer SHA256: `26f70a358763c0782d14ed5d356a28b0d9e9dec2469693262f219c0577473
 
 Post-release acceptance: short human English, Hindi and Hinglish samples matched their prompts and pasted exactly with clipboard restoration and microphone stop. Edge plain/rich fields, Word and VS Code received multilingual multiline paste; unsafe/changed/duplicate browser targets refused input. The 44-file security diff review found no new reportable vulnerability. A test-only diagnostic privacy fix and signing-verification tooling are on main; the installed binary is unchanged. The QA record retains initial timing/prompt and one shutdown-test failure separately from the successful observations.
 
-Code signing policy and the free online application route: https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/code-signing.md. Foundation approval and owner setup are pending; the installer remains an unsigned prerelease. Broader clean-machine/physical/accessibility and owner launch gates are not waived.
+Code signing policy: https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/code-signing.md. The owner submitted the free SignPath Foundation application and shared its receipt email on 7 November 2026. Review, approval and signing setup are pending; the installer remains an unsigned prerelease. Clean-machine/physical/accessibility and owner launch gates remain open.
 
 Known validation issue: an intermittent shutdown-test timeout appeared after successful repeated-dictation assertions in follow-up Windows CI. Two local diagnostic repeats exited cleanly, but the cause is unresolved. This remains a stability gate; see the QA record for failed and successful attempts.

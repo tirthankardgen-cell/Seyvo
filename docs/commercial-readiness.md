@@ -6,7 +6,7 @@ Seyvo is a BYOK desktop utility, not a reseller of Google API access. Each user 
 
 The current deliverable is an unsigned Windows x64 validation build. Its real provider, native insertion, encrypted storage, automated checks and installer are implemented; the QA record identifies what was actually accepted. Before selling supported deployments or calling a release production-ready:
 
-1. Complete the live spoken and target-application acceptance matrix on clean supported Windows machines. Choose an explicit OS/architecture support policy.
+1. Complete clean-machine installation and the remaining physical Windows/target-application acceptance matrix, including the documented shutdown stability issue. The specified English, Hindi and Hinglish spoken checks have passed; repeating them is not an outstanding gate. Choose an explicit OS/architecture support policy.
 2. Obtain and protect an appropriate Windows signing identity. The [code signing policy](code-signing.md) provides the free SignPath Foundation online application route and prepared project details. Approval is not guaranteed. Timestamp the application/helper/installer and verify signatures on downloaded artifacts. Signing keys belong in protected CI secrets or a signing service, never the repository.
 3. Complete the documented trademark review. The working name has a known phonetic neighbour; MIT does not provide trademark rights.
 4. Confirm Google terms for launch markets and provider account types. Maintain the pricing/terms links as APIs evolve.
