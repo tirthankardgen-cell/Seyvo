@@ -150,12 +150,13 @@ try {
     );
   } else {
     assert.equal(prepared, 'clipboard-not-empty');
-    if (process.argv.includes('--image-clipboard')) {
-      host.send('clipboard-image-observe');
+    if (process.argv.includes('--image-clipboard') || process.argv.includes('--text-clipboard')) {
+      const kind = process.argv.includes('--image-clipboard') ? 'image' : 'text';
+      host.send(`clipboard-${kind}-observe`);
       assert.equal(
         await host.next(),
-        'image-observed',
-        'An image-only clipboard is required for this opt-in check.',
+        `${kind}-observed`,
+        `A supported ${kind} clipboard is required for this opt-in check.`,
       );
       host.send('clear');
       await host.next();
@@ -168,11 +169,11 @@ try {
         text,
         method: 'paste',
       });
-      host.send('clipboard-image-unchanged');
+      host.send(`clipboard-${kind}-unchanged`);
       assert.equal(
         await host.next(),
-        'image-unchanged',
-        'Image payloads and privacy flags must remain exact.',
+        `${kind}-unchanged`,
+        'Clipboard payloads and metadata must remain exact.',
       );
       assert.equal(imagePaste.ok, true, JSON.stringify(imagePaste));
       assert.equal(imagePaste.result.restored, true);
@@ -184,7 +185,7 @@ try {
         text,
       );
       results.push(
-        'PASS: native multiline paste with existing image clipboard; PNG/DIB pixels and Windows privacy flags restored exactly.',
+        `PASS: native multiline paste with existing ${kind} clipboard; payloads, provenance and privacy flags restored exactly.`,
       );
     }
     results.push(

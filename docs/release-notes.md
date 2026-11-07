@@ -1,6 +1,6 @@
 Seyvo 0.1.7 — Windows x64 validation prerelease.
 
-Fix screenshot clipboard paste by preserving supported image payloads, native bitmap rendering and Windows clipboard privacy flags. Unsupported or unavailable data still causes safe refusal. Temporary paste text requests exclusion from Windows history/cloud sync; other clipboard readers may still observe it. Original-field checks, one-shot insertion, concurrent-copy protection and no auto-submit remain unchanged.
+Fix clipboard paste by preserving supported screenshot images, native bitmap rendering, Chromium text/HTML source metadata and Windows clipboard privacy flags. Unsupported or unavailable data still causes safe refusal. Temporary paste text requests exclusion from Windows history/cloud sync; other clipboard readers may still observe it. Original-field checks, one-shot insertion, concurrent-copy protection and no auto-submit remain unchanged.
 
 Remove the opaque rectangle around the microphone bubble in all themes. Completion hides after 1.5 seconds; errors/recovery hide after eight seconds while the words remain available in Home. Starting another dictation replaces the last in-memory result as previously requested.
 

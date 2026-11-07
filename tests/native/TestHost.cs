@@ -37,6 +37,26 @@ class TestHost {
   [DllImport("gdi32.dll")] static extern int GetDIBits(IntPtr dc,IntPtr bitmap,uint start,uint lines,byte[] bits,ref BITMAPINFO info,uint usage);
   const string OriginalTest="Seyvo synthetic original clipboard", ChangedTest="Seyvo synthetic concurrent clipboard change";
   static Dictionary<uint,string> imageDigests;
+  static Dictionary<uint,string> textDigests;
+  static Dictionary<uint,string> TextDigests(IntPtr owner) {
+    if(!OpenClipboard(owner))return null;
+    try {
+      var result=new Dictionary<uint,string>();uint format=0;long total=0;
+      while((format=EnumClipboardFormats(format))!=0) {
+        var name=new StringBuilder(256);GetClipboardFormatName(format,name,256);
+        string label=name.ToString();
+        if(label=="DataObject" || label=="Ole Private Data")continue;
+        if(format!=1 && format!=7 && format!=13 && format!=16 && label!="HTML Format" && label!="Rich Text Format" && label!="Chromium internal source URL" && label!="Chromium internal source RFH token" && label!="CanIncludeInClipboardHistory" && label!="CanUploadToCloudClipboard" && label!="ExcludeClipboardContentFromMonitorProcessing")return null;
+        IntPtr data=GetClipboardData(format);long size=(long)GlobalSize(data).ToUInt64();total+=size;
+        if(size<=0 || total>67108864)return null;
+        IntPtr ptr=GlobalLock(data);if(ptr==IntPtr.Zero)return null;
+        byte[] bytes=new byte[(int)size];
+        try {Marshal.Copy(ptr,bytes,0,bytes.Length);using(var sha=SHA256.Create())result[format]=Convert.ToBase64String(sha.ComputeHash(bytes));}
+        finally {Array.Clear(bytes,0,bytes.Length);GlobalUnlock(data);}
+      }
+      return result.ContainsKey(13)?result:null;
+    } finally {CloseClipboard();}
+  }
   static bool SameImage(Dictionary<uint,string> expected,Dictionary<uint,string> actual) {
     if(expected==null || actual==null)return false;
     if(expected.Count!=actual.Count)Console.Error.WriteLine("Image format count changed: "+expected.Count+" -> "+actual.Count);
@@ -157,6 +177,14 @@ class TestHost {
           else if(command=="clipboard-image-unchanged") {
             try {Console.WriteLine(SameImage(imageDigests,ImageDigests(form.Handle))?"image-unchanged":"image-mismatch");}
             catch {Console.WriteLine("image-observation-failed");}
+          }
+          else if(command=="clipboard-text-observe") {
+            try {textDigests=TextDigests(form.Handle);Console.WriteLine(textDigests==null?"text-unavailable":"text-observed");}
+            catch {Console.WriteLine("text-observation-failed");}
+          }
+          else if(command=="clipboard-text-unchanged") {
+            try {Console.WriteLine(SameImage(textDigests,TextDigests(form.Handle))?"text-unchanged":"text-mismatch");}
+            catch {Console.WriteLine("text-observation-failed");}
           }
           else if(command=="clear") { box.ReadOnly=false; box.Clear(); box.Focus(); Console.WriteLine("cleared"); }
           else if(command=="clipboard-test") {

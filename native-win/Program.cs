@@ -202,6 +202,7 @@ internal static class Program {
   static bool Supported(uint format, string name) {
     if (format == 1 || format == 7 || format == 8 || format == 13 || format == 16 || format == 17) return true;
     return name == "HTML Format" || name == "Rich Text Format" || name == "PNG" || name == "System.Drawing.Bitmap" ||
+      name == "Chromium internal source URL" || name == "Chromium internal source RFH token" ||
       name == "CanIncludeInClipboardHistory" || name == "CanUploadToCloudClipboard" ||
       name == "ExcludeClipboardContentFromMonitorProcessing";
   }
