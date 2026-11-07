@@ -24,7 +24,7 @@ Host: Windows 11 Home Single Language, x64, build 26300; 7 November 2026. Displa
 | Windows 10 / clean Windows 11 VM | Not performed. |
 | Hindi / Hinglish cloud recognition | Not yet empirically accepted. Unicode insertion was tested separately. |
 | Multi-monitor / negative origin / 100–200% physical scaling | Only the current 150% desktop was observed. Broader matrix remains untested. |
-| Notepad / browser / VS Code / Word / chat / terminals | The owned native text field is verified. Individual third-party targets remain acceptance work; custom, protected, remote and elevated targets can require Copy. |
+| Notepad / browser / VS Code / Word / chat / terminals | Installed 0.1.4 exact Unicode input passed in Edge textarea/contenteditable, an isolated Word RTF, isolated VS Code editor and logged-out ChatGPT composer. Classic PowerShell console capture was safely refused. See the [versioned target matrix](../docs/target-acceptance-0.1.4.md) for exact configurations and remaining limits. Notepad Unicode remains refused; third-party clipboard paths remain unaccepted. |
 | Browser / foreground refusal | An initial attempt correctly refused input when another window retained focus. A later isolated Edge textarea received synthetic Hindi/emoji via native Unicode input; see the 0.1.2 record below. |
 | Suspend/resume / unplug during dictation / screen reader | Handling is implemented; full physical acceptance remains unperformed. |
 | Signature / trademark | Installer unsigned; no signing certificate or formal trademark clearance supplied. |
@@ -112,3 +112,7 @@ Full dependency audit reported zero vulnerabilities. Source, 15 Git revisions an
 Human speech remains deferred at the user's request. Clean-machine, wider physical/target/accessibility acceptance, signing and brand/provider launch decisions remain open. No stable commercial completion is claimed.
 
 The full public 0.1.4 installer was downloaded again: 124,707,747 bytes, SHA256 `a762ef343dafbac103bbedf32ecbb6173d27de1825c4145014c52daff5744fcc`, matching the tested local installer. Fresh-profile onboarding and the installed live caret bubble screenshots were inspected and updated in the documentation.
+
+## 0.1.4 additional target acceptance
+
+The unchanged installed native helper passed 13 additional real target checks: nine Edge insertion/refusal cases and Word, VS Code, logged-out ChatGPT and a classic PowerShell console. Positive cases exactly preserved single-line Hindi, Bengali and emoji. The console was refused before input; browser password/read-only/button, duplicate token, moved field and moved caret cases also refused as expected. No clipboard mutation or Enter was used and no chat message was submitted. Owned fixtures were closed. These are native-input observations, separate from cloud recognition and human microphone acceptance. Versions, setup, privacy boundaries and outstanding cases are recorded in [target acceptance](../docs/target-acceptance-0.1.4.md).

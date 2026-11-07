@@ -2,6 +2,8 @@
 
 Requirements: Windows x64 supported by the packaged Electron runtime, microphone and internet, a Gemini API key with access to `gemini-3.5-transcribe-live`, sufficient quota/billing and supported account geography. Initial development host is Windows 11 build 26300. Windows 10, clean-machine coverage, scaling and application compatibility are tracked separately in `tests/manual-windows-qa.md`; do not assume an untested platform passed.
 
+The installed 0.1.4 helper exactly preserved multilingual single-line Unicode in Edge textarea/contenteditable, an isolated Word RTF, an isolated VS Code editor with accessibility enabled and the logged-out ChatGPT web composer. The classic PowerShell console refused capture before input. These are narrowly scoped observations; consult the [target matrix](target-acceptance-0.1.4.md) for versions, settings and untested variants. They do not certify clipboard paste or full speech recognition in every target.
+
 | Symptom | Next step |
 | --- | --- |
 | Key test rejected | Review key restrictions, model/region access and account billing in Google AI Studio. Failed replacement does not overwrite the previous encrypted key. |
