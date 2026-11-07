@@ -194,12 +194,29 @@ describe('single session authority', () => {
     await Promise.all([f.coordinator.stop(), f.coordinator.stop()]);
     expect(f.ports.insert).toHaveBeenCalledTimes(1);
     expect(f.coordinator.recovery).toContain('नमस्ते');
-    expect(f.coordinator.message).toContain('may have failed');
+    expect(f.coordinator.message).toContain('Text sent to the original field');
+    expect(f.coordinator.phase).toBe('idle');
     expect(f.coordinator.microphoneActive).toBe(false);
     expect(f.provider.close).toHaveBeenCalled();
-    await expect(f.coordinator.start()).rejects.toThrow('dismiss');
-    f.coordinator.dismiss();
+    await f.coordinator.start();
     expect(f.coordinator.recovery).toBe('');
+    expect(f.coordinator.phase).toBe('listening');
+    expect(f.ports.insert).toHaveBeenCalledOnce();
+    expect(f.ports.copy).not.toHaveBeenCalled();
+    await f.coordinator.cancel();
+  });
+  it('starts fresh after failed delivery without replaying or copying the old transcript', async () => {
+    const f = fixture();
+    f.provider.finish.mockResolvedValueOnce({ text: 'Previous incomplete text', complete: false });
+    await f.coordinator.start();
+    await f.coordinator.stop();
+    expect(f.coordinator.phase).toBe('recovery');
+    await f.coordinator.start();
+    expect(f.coordinator.phase).toBe('listening');
+    expect(f.coordinator.recovery).toBe('');
+    expect(f.ports.insert).not.toHaveBeenCalled();
+    expect(f.ports.copy).not.toHaveBeenCalled();
+    await f.coordinator.cancel();
   });
   it('does not open microphone in excluded apps', async () => {
     const f = fixture();

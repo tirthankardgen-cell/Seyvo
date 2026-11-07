@@ -58,10 +58,16 @@ export class SessionCoordinator {
   async start(local = false): Promise<void> {
     if (this.busy || this.cleanupOperation || !['idle', 'error', 'recovery'].includes(this.phase))
       throw new AppError('Finish or cancel the current session first.');
-    if (this.recovery)
-      throw new AppError('Copy or dismiss the current result before starting another dictation.');
+    if (this.recovery && local)
+      throw new AppError(
+        'Copy or dismiss the last transcript before running a local microphone test.',
+      );
     const settings = structuredClone(this.ports.settings());
     if (settings.paused && !local) throw new AppError('Seyvo is paused. Resume it to dictate.');
+    // An explicit new dictation replaces the last in-memory result. Never replay
+    // its insertion, copy it, or enable history as a side effect of starting.
+    this.recovery = '';
+    this.recoveryTarget = undefined;
     const current = {
       id: randomUUID(),
       abort: new AbortController(),
@@ -247,7 +253,10 @@ export class SessionCoordinator {
     try {
       this.insertionOperation = this.ports.insert(this.recoveryTarget, this.recovery, method);
       await this.insertionOperation;
-      this.change('recovery', 'Insertion may have failed. Check your target before retrying.');
+      this.change(
+        'idle',
+        'Text sent to the original field. Check it before retrying. Ready for your next dictation.',
+      );
     } catch (error) {
       if (this.ports.settings().soundCues) this.ports.cue('error');
       this.change('recovery', publicError(error));

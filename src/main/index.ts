@@ -171,7 +171,7 @@ async function run(): Promise<void> {
           },
           {
             label: snapshot.phase === 'listening' ? 'Stop dictation' : 'Start dictation',
-            enabled: snapshot.phase === 'listening' || (!coordinator.busy && !snapshot.recovery),
+            enabled: snapshot.phase === 'listening' || !coordinator.busy,
             click: () => {
               void act(snapshot.phase === 'listening' ? 'stop' : 'start').catch(
                 reportActivationError,
@@ -214,8 +214,13 @@ async function run(): Promise<void> {
         ]),
       );
       if (overlayTimer) clearTimeout(overlayTimer);
-      if (!coordinator.busy && snapshot.phase !== 'inserting')
-        overlayTimer = setTimeout(() => windows.hideOverlay(), 2500);
+      // Keep actionable failures visible until the user handles them. The bubble
+      // contains no recovery text and never takes focus from the destination.
+      if (!coordinator.busy && snapshot.phase === 'idle')
+        overlayTimer = setTimeout(
+          () => windows.hideOverlay(),
+          snapshot.message.startsWith('No finalized speech') ? 8000 : 2500,
+        );
     }
     if (coordinator.busy && !globalShortcut.isRegistered('Escape'))
       globalShortcut.register('Escape', () => {

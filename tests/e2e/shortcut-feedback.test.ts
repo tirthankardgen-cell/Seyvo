@@ -6,7 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { quitApp } from './helpers';
 
-test('blocked shortcut reveals recovery without discarding words, restarting audio or hiding the cause', async () => {
+test('new dictations replace old recovery and consecutive finalized sessions insert without opening the dashboard', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'seyvo-shortcut-feedback-'));
   const env = Object.fromEntries(
     Object.entries(process.env).filter(
@@ -75,7 +75,18 @@ test('blocked shortcut reveals recovery without discarding words, restarting aud
           socket.on('message', (data) => {
             const message = JSON.parse(data.toString());
             if (message.setup) socket.send(JSON.stringify({ setupComplete: {} }));
-            if (message.realtimeInput?.audio && !sent) {
+            const finalFixture = (globalThis as unknown as { finalFixture?: boolean }).finalFixture;
+            if (message.realtimeInput?.activityEnd && finalFixture) {
+              socket.send(
+                JSON.stringify({
+                  serverContent: {
+                    inputTranscription: { text: 'Automatic native insertion fixture.' },
+                    generationComplete: true,
+                  },
+                }),
+              );
+            }
+            if (message.realtimeInput?.audio && !sent && !finalFixture) {
               sent = true;
               socket.send(
                 JSON.stringify({
@@ -140,14 +151,21 @@ test('blocked shortcut reveals recovery without discarding words, restarting aud
     const overlay = app.windows().find((p) => p.url().includes('#overlay'))!;
     await expect(overlay.getByText('Check your text', { exact: true })).toBeVisible();
     expect(await overlay.locator('body').innerText()).not.toContain(before.recovery);
+    // Previously all bubbles hid after 2.5 seconds, concealing the reason for no paste.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    expect(
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .find((w) => w.webContents.getURL().includes('#overlay'))!
+          .isVisible(),
+      ),
+    ).toBe(true);
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()
         .find((w) => w.webContents.getURL().endsWith('index.html'))!
         .show(),
     );
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await hideAndActivate();
-    await expect.poll(dashboardVisible).toBe(true);
     await expect(page.getByRole('button', { name: 'View recovered text' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Test microphone', exact: true })).toBeDisabled();
     const after = await page.evaluate(() => window.seyvo.status());
@@ -156,8 +174,44 @@ test('blocked shortcut reveals recovery without discarding words, restarting aud
     expect(after.microphoneActive).toBe(false);
     await page.getByRole('button', { name: 'View recovered text' }).click();
     await expect(page.locator('.recovery pre')).toHaveText(before.recovery);
-    await page.getByRole('button', { name: 'Dismiss', exact: true }).click();
-    expect((await page.evaluate(() => window.seyvo.status())).recovery).toBe('');
+    // Prove automatic delivery without a Copy/Retry click. Direct Unicode keeps
+    // the real user's occupied clipboard untouched; clipboard restoration has
+    // its separate controlled native acceptance fixture.
+    expect(
+      (await page.evaluate(() => window.seyvo.updateSettings({ insertion: 'unicode' }))).ok,
+    ).toBe(true);
+    await app.evaluate(({ BrowserWindow }) => {
+      (globalThis as unknown as { finalFixture: boolean }).finalFixture = true;
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().endsWith('index.html'))!
+        .hide();
+    });
+    target.stdin!.write('clear\n');
+    expect((await lines.next()).value).toBe('cleared');
+    target.stdin!.write('focus\n');
+    expect((await lines.next()).value).toBe('focused');
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      await app.evaluate(() =>
+        (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
+      );
+      await expect
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
+        .toBe('listening');
+      expect((await page.evaluate(() => window.seyvo.status())).recovery).toBe('');
+      expect(await dashboardVisible()).toBe(false);
+      await app.evaluate(() =>
+        (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
+      );
+      await expect
+        .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
+        .toBe('idle');
+      target.stdin!.write('text\n');
+      expect(Buffer.from((await lines.next()).value!, 'base64').toString()).toBe(
+        'Automatic native insertion fixture.'.repeat(cycle),
+      );
+      expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
+      expect(await dashboardVisible()).toBe(false);
+    }
   } finally {
     if (target?.exitCode === null) {
       target.stdin?.write('quit\n');

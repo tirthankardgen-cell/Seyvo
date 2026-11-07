@@ -10,6 +10,7 @@ import type {
 import { brand } from '../shared/brand';
 import { codingVocabulary } from '../shared/vocabulary';
 import { audioLevel } from '../shared/audio-level';
+import { shortcutSchema } from '../shared/contracts';
 import './styles.css';
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -81,6 +82,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [shortcut, setShortcut] = useState('');
+  const [shortcutMessage, setShortcutMessage] = useState('');
   const [step, setStep] = useState(0);
   const practice = useRef<HTMLTextAreaElement>(null);
   const overlay = location.hash === '#overlay';
@@ -114,6 +116,14 @@ function App() {
   async function patch(patch: SettingsPatch) {
     await run(window.seyvo.updateSettings(patch));
   }
+  async function saveShortcut(candidate: string) {
+    setShortcutMessage('');
+    const saved = await run(window.seyvo.updateSettings({ shortcut: candidate }));
+    if (saved) {
+      setShortcut('');
+      setShortcutMessage('Shortcut saved.');
+    }
+  }
   async function loadHistory() {
     const value = await run(window.seyvo.history('list'));
     if (value) setHistory(value);
@@ -143,7 +153,7 @@ function App() {
           ? 'Finishing'
           : status.phase === 'inserting'
             ? 'Inserting'
-            : status.recovery
+            : status.recovery && status.phase === 'recovery'
               ? 'Your words are ready'
               : status.phase === 'error'
                 ? 'Needs attention'
@@ -165,14 +175,23 @@ function App() {
                   ? 'Check your text'
                   : status.phase === 'error'
                     ? 'Needs attention'
-                    : 'Mic off'}
+                    : status.message.startsWith('Text sent to the original field.')
+                      ? 'Text sent'
+                      : status.message.startsWith('No finalized speech')
+                        ? 'No speech received'
+                        : status.message.startsWith('Microphone test finished')
+                          ? 'Mic test finished'
+                          : 'Mic off'}
             </strong>
             <small>
               {status.microphoneActive
                 ? time
-                : ['error', 'recovery'].includes(status.phase)
+                : ['error', 'recovery'].includes(status.phase) ||
+                    status.message.startsWith('No finalized speech')
                   ? 'Open Seyvo'
-                  : 'Seyvo'}
+                  : status.message.startsWith('Microphone test finished')
+                    ? 'No audio uploaded'
+                    : 'Seyvo'}
             </small>
           </div>
           {s.captions && status.interim && <p className="caption">{status.interim}</p>}
@@ -350,7 +369,10 @@ function App() {
           id="shortcut"
           value={shortcut || s.shortcut}
           readOnly
-          onFocus={() => setShortcut('Press a combination…')}
+          onFocus={() => {
+            setShortcutMessage('');
+            setShortcut('Press a combination…');
+          }}
           onBlur={() => {
             if (shortcut === 'Press a combination…') setShortcut('');
           }}
@@ -374,24 +396,44 @@ function App() {
           }}
         />
         <button
-          disabled={busy || active || !shortcut || shortcut.startsWith('Press')}
-          onClick={() => void patch({ shortcut })}
+          disabled={
+            busy ||
+            active ||
+            !shortcutSchema.safeParse(shortcut).success ||
+            (shortcut === s.shortcut && (status.shortcutRegistered || s.paused))
+          }
+          onClick={() => void saveShortcut(shortcut)}
         >
           Save shortcut
         </button>
         <button
           onClick={() => {
-            setShortcut('');
-            void patch({ shortcut: 'Control+Shift+Space' });
+            void saveShortcut('Control+Shift+Space');
           }}
           disabled={busy || active}
         >
           Reset
         </button>
       </div>
+      <p className="hint" role="status" aria-live="polite" data-testid="shortcut-status">
+        {shortcutMessage && `${shortcutMessage} `}
+        {s.paused
+          ? 'Saved shortcut (paused): '
+          : status.shortcutRegistered
+            ? 'Active shortcut: '
+            : 'Shortcut not registered: '}
+        <kbd>{s.shortcut.replaceAll('Control', 'Ctrl')}</kbd>
+        {shortcut &&
+          !shortcut.startsWith('Press') &&
+          shortcut !== s.shortcut &&
+          ' · Unsaved change'}
+      </p>
+      {shortcut && !shortcut.startsWith('Press') && !shortcutSchema.safeParse(shortcut).success && (
+        <p className="hint">Use Ctrl with Shift or Alt and a key, or F6–F12.</p>
+      )}
       <p className="hint">
-        Click the field and press Ctrl + Shift + a key, or F6–F12. Conflicts keep the previous
-        working shortcut. Toggle mode: press once to start, again to stop.
+        Click the field and press Ctrl with Shift or Alt and a key, or F6–F12. Conflicts keep the
+        previous working shortcut. Toggle mode: press once to start, again to stop.
       </p>
       <p className="hint">
         Push-to-talk is unavailable in this release; global key-up handling has not been validated.
@@ -452,7 +494,8 @@ function App() {
           {status.recovery && (
             <div className="notice" role="status">
               <span>
-                A previous transcript is waiting. Copy it if needed, then Dismiss to record again.
+                Your last transcript is available below. Starting a new dictation replaces it. Copy
+                it first if needed.
               </span>
               {page !== 'Home' && (
                 <button onClick={() => setPage('Home')}>View recovered text</button>
@@ -588,8 +631,7 @@ function App() {
                         busy ||
                         s.paused ||
                         !status.hasKey ||
-                        (active && status.phase !== 'listening') ||
-                        Boolean(status.recovery)
+                        (active && status.phase !== 'listening')
                       }
                       onClick={() =>
                         void run(

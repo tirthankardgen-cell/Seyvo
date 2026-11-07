@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 — validation
+
+Make repeated dictation work without dismissing the last result. After native input is sent, return to Ready; the next explicit dictation replaces the previous in-memory transcript and captures a fresh target. Failed or incomplete output remains available until that next activation, Copy, Dismiss or exit. No stale result is replayed, and history remains opt-in. “Text sent” describes the Windows input attempt, not independent confirmation that another app accepted it.
+
+Confirm shortcut saves, show the active or paused binding, disable Save after success, and validate incomplete combinations before submission. Failed rebinds retain the previous shortcut and visibly explain the conflict. Keep error/recovery bubbles visible until handled; distinguish local microphone tests and no-speech results from successful input.
+
 ## 0.1.5 — validation
 
 Bring Seyvo into view when a shortcut cannot start because a transcript is waiting or a key is missing. Preserve the original recovery reason and words. Show recovery instructions on every dashboard tab, disable the unavailable local test while recovery is pending, and make the privacy-filtered bubble indicate that text needs attention.
