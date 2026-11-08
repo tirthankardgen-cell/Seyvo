@@ -156,6 +156,16 @@ function App() {
       </main>
     );
   const s = status.settings;
+  const singleKeySelected = s.activation === 'single-key';
+  const activeShortcut =
+    status.singleKeyRegistered || (singleKeySelected && s.paused)
+      ? 'Right Ctrl'
+      : s.shortcut.replaceAll('Control', 'Ctrl');
+  const gestureHelp = status.singleKeyRegistered
+    ? s.singleKeyMode === 'hold'
+      ? 'Hold Right Ctrl for 3 seconds, speak while holding, then release to finish.'
+      : 'Hold Right Ctrl for 3 seconds, release and speak, then tap Right Ctrl to finish.'
+    : 'Press your shortcut once to start, then again to finish.';
   const devices = status.microphones;
   const active = ['connecting', 'listening', 'finalizing', 'inserting'].includes(status.phase);
   const title = s.paused
@@ -380,58 +390,121 @@ function App() {
   );
   const shortcutPanel = (
     <>
-      <label htmlFor="shortcut">Dictation shortcut</label>
-      <div className="input-line">
-        <input
-          id="shortcut"
-          value={shortcut || s.shortcut}
-          readOnly
-          onFocus={() => {
-            setShortcutMessage('');
-            setShortcut('Press a combination…');
-          }}
-          onBlur={() => {
-            if (shortcut === 'Press a combination…') setShortcut('');
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') return;
-            e.preventDefault();
-            const key =
-              e.code === 'Space'
-                ? 'Space'
-                : /^Key[A-Z]$/.test(e.code)
-                  ? e.code.slice(3)
-                  : /^F\d+$/.test(e.key)
-                    ? e.key
-                    : '';
-            if (key)
-              setShortcut(
-                [e.ctrlKey ? 'Control' : '', e.altKey ? 'Alt' : '', e.shiftKey ? 'Shift' : '', key]
-                  .filter(Boolean)
-                  .join('+'),
-              );
-          }}
-        />
-        <button
-          disabled={
-            busy ||
-            active ||
-            !shortcutSchema.safeParse(shortcut).success ||
-            (shortcut === s.shortcut && (status.shortcutRegistered || s.paused))
-          }
-          onClick={() => void saveShortcut(shortcut)}
-        >
-          Save shortcut
-        </button>
-        <button
-          onClick={() => {
-            void saveShortcut('Control+Shift+Space');
-          }}
-          disabled={busy || active}
-        >
-          Reset
-        </button>
-      </div>
+      <label htmlFor="activation">Activation method</label>
+      <select
+        id="activation"
+        value={s.activation}
+        disabled={busy || active}
+        onChange={(e) => void patch({ activation: e.target.value as Settings['activation'] })}
+      >
+        <option value="shortcut">Key combination</option>
+        <option value="single-key" disabled={!status.nativeAvailable}>
+          Single key
+        </option>
+      </select>
+      {singleKeySelected && (
+        <>
+          <label htmlFor="single-key">Single key</label>
+          <select id="single-key" defaultValue="right-control" disabled={busy || active}>
+            <option value="right-control">Right Ctrl</option>
+            <option value="fn" disabled>
+              Fn · unavailable through standard Windows keyboard events
+            </option>
+          </select>
+          <label htmlFor="single-key-mode">Single-key behavior</label>
+          <select
+            id="single-key-mode"
+            value={s.singleKeyMode}
+            disabled={busy || active}
+            onChange={(e) =>
+              void patch({ singleKeyMode: e.target.value as Settings['singleKeyMode'] })
+            }
+          >
+            <option value="hold">Hold to talk · release to finish</option>
+            <option value="toggle">Hold to start · tap to finish</option>
+          </select>
+          <p className="hint">
+            Hold Right Ctrl alone for 3 seconds to start. Wait for Listening before speaking.
+            {s.singleKeyMode === 'hold'
+              ? ' Keep holding as you speak; releasing finishes.'
+              : ' Release and speak; tap and release Right Ctrl again to finish.'}{' '}
+            Short presses do not start the microphone. Normal Ctrl combinations still work.
+          </p>
+          {!status.singleKeyRegistered && !s.paused && (
+            <p className="hint" role="status">
+              Single-key listening is unavailable.{' '}
+              {status.shortcutRegistered
+                ? 'Your saved key combination remains active.'
+                : 'Restart Seyvo or choose Key combination.'}
+            </p>
+          )}
+        </>
+      )}
+      <p className="hint">
+        Fn is usually handled by the keyboard itself and is unavailable to Windows apps. Use Right
+        Ctrl for single-key activation.
+      </p>
+      {!singleKeySelected && (
+        <>
+          <label htmlFor="shortcut">Dictation shortcut</label>
+          <div className="input-line">
+            <input
+              id="shortcut"
+              value={shortcut || s.shortcut}
+              readOnly
+              onFocus={() => {
+                setShortcutMessage('');
+                setShortcut('Press a combination…');
+              }}
+              onBlur={() => {
+                if (shortcut === 'Press a combination…') setShortcut('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') return;
+                e.preventDefault();
+                const key =
+                  e.code === 'Space'
+                    ? 'Space'
+                    : /^Key[A-Z]$/.test(e.code)
+                      ? e.code.slice(3)
+                      : /^F\d+$/.test(e.key)
+                        ? e.key
+                        : '';
+                if (key)
+                  setShortcut(
+                    [
+                      e.ctrlKey ? 'Control' : '',
+                      e.altKey ? 'Alt' : '',
+                      e.shiftKey ? 'Shift' : '',
+                      key,
+                    ]
+                      .filter(Boolean)
+                      .join('+'),
+                  );
+              }}
+            />
+            <button
+              disabled={
+                busy ||
+                active ||
+                !shortcutSchema.safeParse(shortcut).success ||
+                (shortcut === s.shortcut && (status.shortcutRegistered || s.paused))
+              }
+              onClick={() => void saveShortcut(shortcut)}
+            >
+              Save shortcut
+            </button>
+            <button
+              onClick={() => {
+                void saveShortcut('Control+Shift+Space');
+              }}
+              disabled={busy || active}
+            >
+              Reset
+            </button>
+          </div>
+        </>
+      )}
       <p className="hint" role="status" aria-live="polite" data-testid="shortcut-status">
         {shortcutMessage && `${shortcutMessage} `}
         {s.paused
@@ -439,7 +512,7 @@ function App() {
           : status.shortcutRegistered
             ? 'Active shortcut: '
             : 'Shortcut not registered: '}
-        <kbd>{s.shortcut.replaceAll('Control', 'Ctrl')}</kbd>
+        <kbd>{activeShortcut}</kbd>
         {shortcut &&
           !shortcut.startsWith('Press') &&
           shortcut !== s.shortcut &&
@@ -448,13 +521,12 @@ function App() {
       {shortcut && !shortcut.startsWith('Press') && !shortcutSchema.safeParse(shortcut).success && (
         <p className="hint">Use Ctrl with Shift or Alt and a key, or F6–F12.</p>
       )}
-      <p className="hint">
-        Click the field and press Ctrl with Shift or Alt and a key, or F6–F12. Conflicts keep the
-        previous working shortcut. Toggle mode: press once to start, again to stop.
-      </p>
-      <p className="hint">
-        Push-to-talk is unavailable in this release; global key-up handling has not been validated.
-      </p>
+      {!singleKeySelected && (
+        <p className="hint">
+          Click the field and press Ctrl with Shift or Alt and a key, or F6–F12. Conflicts keep the
+          previous working shortcut. Toggle mode: press once to start, again to stop.
+        </p>
+      )}
     </>
   );
 
@@ -578,9 +650,8 @@ function App() {
                   ) : (
                     <>
                       <p>
-                        Open Notepad or a browser text field. Keep the caret there, press{' '}
-                        <kbd>{s.shortcut.replaceAll('Control', 'Ctrl')}</kbd>, speak, then press
-                        again. Seyvo never sends Enter.
+                        Open Notepad or a browser text field. Keep the caret there. {gestureHelp}{' '}
+                        Seyvo never sends Enter.
                       </p>
                       <label htmlFor="practice">Dictation practice</label>
                       <textarea
@@ -629,7 +700,7 @@ function App() {
                       <span className={`status-dot ${status.microphoneActive ? 'live' : ''}`} />
                       {status.microphoneActive ? 'RECORDING' : 'DICTATION'}
                     </span>
-                    <kbd>{s.shortcut.replaceAll('Control', 'Ctrl')}</kbd>
+                    <kbd>{activeShortcut}</kbd>
                   </div>
                   <div className="dictation-visual">
                     <Mark />

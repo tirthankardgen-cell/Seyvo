@@ -30,6 +30,8 @@ export const settingsSchema = z
     version: z.literal(1).default(1),
     onboardingComplete: z.boolean().default(false),
     shortcut: shortcutSchema.default('Control+Shift+Space'),
+    activation: z.enum(['shortcut', 'single-key']).default('shortcut'),
+    singleKeyMode: z.enum(['hold', 'toggle']).default('hold'),
     paused: z.boolean().default(false),
     keepConnectionReady: z.boolean().default(true),
     startMinimized: z.boolean().default(false),
@@ -104,6 +106,7 @@ export interface Status {
   recovery: string;
   targetApp: string;
   shortcutRegistered: boolean;
+  singleKeyRegistered: boolean;
   nativeAvailable: boolean;
   startup: boolean;
   startupAvailable: boolean;

@@ -26,6 +26,10 @@ Data flow: explicit shortcut -> native metadata capture -> nonactivating overlay
 
 ## Acceptance and release gates
 
+## 0.1.10 shortcut scope
+
+Preserve the user's saved combination and add a mutually exclusive Right Ctrl activation method. Both single-key modes require a continuous three-second hold: release finalizes in hold mode; the first release keeps listening and the next tap/release finalizes in toggle mode. Fn has no standard Windows virtual-key binding and is not presented as supported. A narrow native listener emits only Right Ctrl down/up and an interruption marker for a chord; ordinary key identities are never sent or logged. Main owns timing, state, cancellation and microphone activation. Disable pending gestures on pause, sleep, lock, rebind and shutdown; stop/cancel on listener loss and expose the saved combination fallback. Verify the gesture, native event delivery, focused Electron flow and installed packaging. Do not repeat the language/target acceptance matrix for this shortcut-only update; retain its recorded limits.
+
 Each milestone runs typecheck, lint, tests and production build. Tests cover cancellation, stale events, PCM bytes, setup/finalization, target refusal, clipboard races, settings/vault and IPC. Real Windows tests and provider tests are recorded separately. Live microphone/account acceptance needs a user-configured key; the app must test the exact model before enabling dictation. No production release until a packaged start/dictate/insert/close/restart test and security review pass. Signing and trademark clearance remain owner-controlled release prerequisites.
 
 ## Official API verification

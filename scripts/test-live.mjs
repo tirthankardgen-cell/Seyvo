@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { quitTestedApp } from './quit-tested-app.mjs';
 
 const humanMatrix = process.argv.includes('--human-matrix');
+const singleKey = process.argv.includes('--single-key');
 const human = humanMatrix || process.argv.includes('--human');
 const requestedHumanLanguage = process.argv
   .find((argument) => argument.startsWith('--human-language='))
@@ -41,7 +42,11 @@ const operator = humanMatrix ? createInterface({ input: process.stdin }) : undef
 const hardware = human || process.argv.includes('--hardware');
 const development = process.argv.includes('--development');
 const caretPlacement = process.argv.includes('--caret');
-const repeats = humanMatrix ? prompts.length : process.argv.includes('--repeat') ? 2 : 1;
+const repeats = humanMatrix
+  ? prompts.length
+  : singleKey || process.argv.includes('--repeat')
+    ? 2
+    : 1;
 const insertionMethod = process.argv.includes('--paste') ? 'paste' : 'unicode';
 const imageClipboard = process.argv.includes('--image-clipboard');
 const clipboardKind = imageClipboard
@@ -126,6 +131,9 @@ async function waitPhase(phases) {
   );
 }
 const report = {
+  shortcutSource: singleKey
+    ? 'Win32 SendInput Right Ctrl down/up; not a physical keyboard press'
+    : 'Win32 SendInput F8',
   packaged: !development,
   audioSource: human
     ? 'Live spoken test through Windows physical microphone'
@@ -172,15 +180,17 @@ try {
   assert.equal(connected.ok, true, connected.error);
   report.googleSetup = 'passed';
   const configured = await page.evaluate(
-    ({ caretPlacement, insertionMethod }) =>
+    ({ caretPlacement, insertionMethod, singleKey }) =>
       window.seyvo.updateSettings({
         shortcut: 'F8',
+        activation: singleKey ? 'single-key' : 'shortcut',
+        singleKeyMode: 'hold',
         insertion: insertionMethod,
         paused: false,
         deviceId: 'default',
         ...(caretPlacement ? { overlayPosition: 'caret', showOverlay: true, captions: false } : {}),
       }),
-    { caretPlacement, insertionMethod },
+    { caretPlacement, insertionMethod, singleKey },
   );
   assert.equal(configured.ok, true, configured.error);
   assert.equal(await next(), 'ready');
@@ -232,6 +242,13 @@ try {
   let cumulative = '';
   report.sessions = [];
   for (let cycle = 0; cycle < repeats; cycle++) {
+    if (singleKey) {
+      const selected = await page.evaluate(
+        (singleKeyMode) => window.seyvo.updateSettings({ singleKeyMode }),
+        cycle === 0 ? 'hold' : 'toggle',
+      );
+      assert.equal(selected.ok, true, selected.error);
+    }
     if (warm) {
       const deadline = Date.now() + 65000;
       while ((await page.evaluate(() => window.seyvo.status())).connectionState !== 'ready') {
@@ -270,11 +287,23 @@ try {
       'No input is sent outside the owned test window.',
     );
     const activatedAt = Date.now();
-    assert.equal(await command('shortcut'), 'shortcut-sent');
+    assert.equal(
+      await command(singleKey ? 'right-control-down' : 'shortcut'),
+      singleKey ? 'key-sent' : 'shortcut-sent',
+    );
+    if (singleKey) {
+      await new Promise((done) => setTimeout(done, 2400));
+      assert.equal((await page.evaluate(() => window.seyvo.status())).microphoneActive, false);
+    }
     const recording = await waitPhase(['listening', 'error']);
     assert.equal(recording.phase, 'listening', recording.message);
     assert.equal(recording.targetApp.toLowerCase(), 'testhost.exe');
     assert.equal(recording.microphoneActive, true);
+    if (singleKey && cycle === 1) {
+      assert.equal(await command('right-control-up'), 'key-sent');
+      await new Promise((done) => setTimeout(done, 300));
+      assert.equal((await page.evaluate(() => window.seyvo.status())).microphoneActive, true);
+    }
     if (caretPlacement) {
       const overlay = context.pages().find((candidate) => candidate.url().includes('#overlay'));
       assert.ok(overlay, 'The installed caret bubble must be present.');
@@ -313,6 +342,12 @@ try {
     if (humanMatrix) {
       const stopped = await page.evaluate(() => window.seyvo.action('stop'));
       assert.equal(stopped.ok, true, stopped.error);
+    } else if (singleKey) {
+      if (cycle === 1) {
+        assert.equal(await command('right-control-down'), 'key-sent');
+        await new Promise((done) => setTimeout(done, 100));
+      }
+      assert.equal(await command('right-control-up'), 'key-sent');
     } else {
       assert.equal(
         await command('shortcut'),
@@ -420,17 +455,29 @@ try {
   report.error = error.message;
   process.exitCode = 1;
 } finally {
+  if (singleKey) await command('right-control-up').catch(() => {});
   if (page) {
     if (ownsSession) {
       await page.evaluate(() => window.seyvo.action('cancel')).catch(() => {});
       await page.evaluate(() => window.seyvo.action('dismiss')).catch(() => {});
     }
     if (settings) {
-      const { shortcut, insertion, paused, deviceId, overlayPosition, showOverlay, captions } =
-        settings;
+      const {
+        shortcut,
+        activation,
+        singleKeyMode,
+        insertion,
+        paused,
+        deviceId,
+        overlayPosition,
+        showOverlay,
+        captions,
+      } = settings;
       await page
         .evaluate((patch) => window.seyvo.updateSettings(patch), {
           shortcut,
+          activation,
+          singleKeyMode,
           insertion,
           paused,
           deviceId,

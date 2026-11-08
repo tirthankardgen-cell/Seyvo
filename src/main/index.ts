@@ -24,11 +24,13 @@ import {
   type ActionResult,
   type Status,
   type Microphone,
+  type Settings,
 } from '../shared/contracts';
 import { AppError, publicError } from '../shared/errors';
 import { Storage } from './storage';
 import { NativeBridge } from './native';
 import { Shortcuts } from './shortcuts';
+import { SingleKeyShortcut } from './single-key-shortcut';
 import { Windows } from './windows';
 import { GeminiLive } from './transcription/gemini-live';
 import { StandbyConnection } from './transcription/standby';
@@ -139,10 +141,48 @@ async function run(): Promise<void> {
     delayedAbort?.abort();
     void act(coordinator.phase === 'listening' ? 'stop' : 'start').catch(reportActivationError);
   });
+  let singleKeyRegistered = false;
+  let bindingGeneration = 0;
+  const singleKey = new SingleKeyShortcut({
+    phase: () => coordinator.phase,
+    start: async () => {
+      delayedAbort?.abort();
+      await act('start');
+    },
+    stop: () => act('stop'),
+    cancel: () => coordinator.cancel(),
+    error: (error) => {
+      void reportActivationError(error);
+    },
+  });
+  native.onShortcut = (edge) => singleKey.edge(edge);
+  async function bindShortcuts(settings: Settings): Promise<void> {
+    const generation = ++bindingGeneration;
+    const enabled =
+      settings.activation === 'single-key' && !settings.paused && !suspended && !locked;
+    if (enabled) {
+      await native.watchShortcut(true);
+      shortcuts.set(settings.shortcut, true);
+    } else {
+      // Reserve the replacement before retiring a working listener.
+      shortcuts.set(settings.shortcut, settings.paused || suspended || locked);
+      // Also retire an enable request still in flight when Windows locks or
+      // suspends; registration status may not have been published yet.
+      if (native.available) await native.watchShortcut(false);
+    }
+    if (generation !== bindingGeneration || shuttingDown) return;
+    singleKeyRegistered = enabled;
+    singleKey.configure(enabled, settings.singleKeyMode);
+  }
   try {
-    shortcuts.set(storage.settings.shortcut, storage.settings.paused);
+    await bindShortcuts(storage.settings);
   } catch (error) {
     coordinator.message = publicError(error);
+    try {
+      shortcuts.set(storage.settings.shortcut, storage.settings.paused);
+    } catch (fallbackError) {
+      coordinator.message = publicError(fallbackError);
+    }
   }
   const iconPath = app.isPackaged
     ? join(process.resourcesPath, 'assets/icon.png')
@@ -175,7 +215,8 @@ async function run(): Promise<void> {
       interim: coordinator.interim,
       recovery: coordinator.recovery,
       targetApp: coordinator.targetApp,
-      shortcutRegistered: Boolean(shortcuts.current),
+      shortcutRegistered: Boolean(shortcuts.current) || singleKeyRegistered,
+      singleKeyRegistered,
       nativeAvailable: native.available,
       startup: startupEnabled(),
       startupAvailable: app.isPackaged,
@@ -212,6 +253,7 @@ async function run(): Promise<void> {
             label: 'Cancel recording',
             enabled: coordinator.busy,
             click: () => {
+              singleKey.reset();
               void coordinator.cancel();
             },
           },
@@ -256,6 +298,7 @@ async function run(): Promise<void> {
     }
     if (coordinator.busy && !globalShortcut.isRegistered('Escape'))
       globalShortcut.register('Escape', () => {
+        singleKey.reset();
         void coordinator.cancel();
       });
     else if (!coordinator.busy && globalShortcut.isRegistered('Escape'))
@@ -285,17 +328,22 @@ async function run(): Promise<void> {
     const previous = storage.settings;
     try {
       if (patch.paused) {
+        singleKey.reset();
         standby.stop();
         delayedAbort?.abort();
         await coordinator.cancel();
       }
       const next = { ...previous, ...patch };
-      const rebind = 'shortcut' in patch || 'paused' in patch;
-      if (rebind) shortcuts.set(next.shortcut, next.paused);
+      const rebind =
+        'shortcut' in patch ||
+        'paused' in patch ||
+        'activation' in patch ||
+        'singleKeyMode' in patch;
+      if (rebind) await bindShortcuts(next);
       try {
         await storage.saveSettings(next);
       } catch (error) {
-        if (rebind) shortcuts.set(previous.shortcut, previous.paused);
+        if (rebind) await bindShortcuts(previous);
         throw error;
       }
       nativeTheme.themeSource = next.theme;
@@ -367,6 +415,7 @@ async function run(): Promise<void> {
         practice = false;
       }
     } else if (action === 'cancel') {
+      singleKey.reset();
       delayedAbort?.abort();
       await coordinator.cancel();
     } else if (action === 'copy') coordinator.copy();
@@ -399,7 +448,8 @@ async function run(): Promise<void> {
             nativeAvailable: native.available,
             phase: coordinator.phase,
             microphoneActive: coordinator.microphoneActive,
-            shortcutRegistered: Boolean(shortcuts.current),
+            shortcutRegistered: Boolean(shortcuts.current) || singleKeyRegistered,
+            singleKeyRegistered,
             hasKey,
             providerVerified,
           },
@@ -652,6 +702,7 @@ async function run(): Promise<void> {
   async function quit(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
+    singleKey.configure(false, storage.settings.singleKeyMode);
     standby.stop();
     delayedAbort?.abort();
     await coordinator.shutdown().catch(() => {});
@@ -673,25 +724,54 @@ async function run(): Promise<void> {
   app.on('window-all-closed', () => {});
   powerMonitor.on('suspend', () => {
     suspended = true;
+    singleKey.configure(false, storage.settings.singleKeyMode);
+    void bindShortcuts(storage.settings).catch(report);
     standby.stop();
     delayedAbort?.abort();
     void coordinator.cancel().catch(report);
   });
   powerMonitor.on('lock-screen', () => {
     locked = true;
+    singleKey.configure(false, storage.settings.singleKeyMode);
+    void bindShortcuts(storage.settings).catch(report);
     standby.stop();
     delayedAbort?.abort();
     void coordinator.cancel().catch(report);
   });
   powerMonitor.on('resume', () => {
     suspended = false;
+    void bindShortcuts(storage.settings).catch(report);
     refreshConnection();
   });
   powerMonitor.on('unlock-screen', () => {
     locked = false;
+    void bindShortcuts(storage.settings).catch(report);
     refreshConnection();
   });
   nativeTheme.themeSource = storage.settings.theme;
+  native.onUnavailable = () => {
+    const wasSingleKey = singleKeyRegistered;
+    singleKeyRegistered = false;
+    singleKey.configure(false, storage.settings.singleKeyMode);
+    if (shuttingDown) return;
+    if (wasSingleKey) {
+      try {
+        shortcuts.set(storage.settings.shortcut, storage.settings.paused || suspended || locked);
+      } catch (error) {
+        report(error);
+      }
+      void coordinator
+        .cancel()
+        .catch(report)
+        .finally(() => {
+          coordinator.message = shortcuts.current
+            ? 'The single-key listener stopped. Your saved key combination is active; restart Seyvo to use Right Ctrl.'
+            : 'The single-key listener stopped. Restart Seyvo or choose an available key combination.';
+          publish();
+        });
+    }
+    publish();
+  };
   startupStage = 'Windows startup settings';
   if (storage.warning) coordinator.message = storage.warning;
   publish();

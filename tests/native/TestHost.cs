@@ -170,6 +170,11 @@ class TestHost {
             Console.WriteLine(GetForegroundWindow()==form.Handle ? "focused" : "focus-blocked");
           }
           else if(command=="text") Console.WriteLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(box.Text)));
+          else if(command=="focused-state") {
+            uint pid; GetWindowThreadProcessId(GetForegroundWindow(),out pid);
+            string name; using(var process=System.Diagnostics.Process.GetProcessById((int)pid))name=process.ProcessName;
+            Console.WriteLine(GetForegroundWindow()==form.Handle && box.Focused ? "field-focused" : "field-unfocused:"+name+":"+box.Focused);
+          }
           else if(command=="clipboard-image-observe") {
             try {imageDigests=ImageDigests(form.Handle);Console.WriteLine(imageDigests==null?"image-unavailable":"image-observed");}
             catch {Console.WriteLine("image-observation-failed");}
@@ -202,9 +207,19 @@ class TestHost {
             INPUT up=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0x77, Flags=2 } };
             Console.WriteLine(SendInput(2,new INPUT[] { down,up },Marshal.SizeOf(typeof(INPUT)))==2 ? "shortcut-sent" : "input-blocked");
           }
+          else if(command=="right-control-down" || command=="right-control-up") {
+            bool up=command=="right-control-up";
+            if(!up && GetForegroundWindow()!=form.Handle) { Console.WriteLine("focus-blocked"); return; }
+            INPUT key=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0xA3, Flags=(uint)(up?3:1) } };
+            Console.WriteLine(SendInput(1,new INPUT[] {key},Marshal.SizeOf(typeof(INPUT)))==1 ? "key-sent" : "input-blocked");
+          }
           else if(command=="readonly") { box.ReadOnly=true; Console.WriteLine("readonly"); }
           else if(command=="button") { box.ReadOnly=false; button.BringToFront(); form.ActiveControl=button; button.Focus(); Console.WriteLine(button.Focused ? "button-focused" : "button-focus-blocked-"+button.CanFocus+"-"+button.Visible+"-"+button.Enabled); }
-          else if(command=="quit") form.Close();
+          else if(command=="quit") {
+            INPUT release=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0xA3, Flags=3 } };
+            SendInput(1,new INPUT[] {release},Marshal.SizeOf(typeof(INPUT)));
+            form.Close();
+          }
         }));
       }
     }); reader.IsBackground=true; reader.Start(); Application.Run(form);

@@ -143,7 +143,11 @@ export class SessionCoordinator {
         'listening',
         local
           ? 'Local microphone test. No audio is uploaded.'
-          : 'Listening. Press your shortcut again to finish.',
+          : settings.activation === 'single-key'
+            ? settings.singleKeyMode === 'hold'
+              ? 'Listening. Release Right Ctrl to finish.'
+              : 'Listening. Tap and release Right Ctrl to finish.'
+            : 'Listening. Press your shortcut again to finish.',
       );
       this.timer = setInterval(() => {
         this.elapsed = Math.floor((Date.now() - current.started) / 1000);

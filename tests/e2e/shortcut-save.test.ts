@@ -59,6 +59,21 @@ test('shortcut capture confirms persisted saves and keeps the active binding aft
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByTestId('shortcut-status')).toContainText('Active shortcut: F6');
     expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
+    await page.getByLabel('Activation method', { exact: true }).selectOption('single-key');
+    await expect(page.getByTestId('shortcut-status')).toContainText('Right Ctrl');
+    await page.getByLabel('Single-key behavior', { exact: true }).selectOption('toggle');
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).settings.singleKeyMode)
+      .toBe('toggle');
+    await quitApp(app);
+    app = await electron.launch({ args, env });
+    page = await app.firstWindow();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await expect(page.getByLabel('Activation method', { exact: true })).toHaveValue('single-key');
+    await expect(page.getByLabel('Single-key behavior', { exact: true })).toHaveValue('toggle');
+    expect((await page.evaluate(() => window.seyvo.status())).singleKeyRegistered).toBe(true);
+    await page.getByLabel('Activation method', { exact: true }).selectOption('shortcut');
+    await expect(page.getByTestId('shortcut-status')).toContainText('Active shortcut: F6');
   } finally {
     await quitApp(app);
     await rm(profile, { recursive: true, force: true });

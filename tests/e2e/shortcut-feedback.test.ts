@@ -240,6 +240,8 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
     target.stdin!.write('focus\n');
     expect((await lines.next()).value).toBe('focused');
     for (let cycle = 1; cycle <= 2; cycle++) {
+      target.stdin!.write('focus\n');
+      expect((await lines.next()).value).toBe('focused');
       await app.evaluate(() =>
         (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
       );
@@ -255,6 +257,8 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
         .toMatch(/^listening:/);
       expect((await page.evaluate(() => window.seyvo.status())).recovery).toBe('');
       expect(await dashboardVisible()).toBe(false);
+      target.stdin!.write('focus\n');
+      expect((await lines.next()).value).toBe('focused');
       await app.evaluate(() =>
         (globalThis as unknown as { activateFixture: () => void }).activateFixture(),
       );

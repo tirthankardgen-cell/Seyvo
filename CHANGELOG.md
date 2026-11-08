@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10 — validation
+
+Keep the saved key combination as the default and add optional Right Ctrl activation. Hold for three seconds to start: either keep holding while speaking and release to finish, or release and speak, then tap/release again to finish. Ignore autorepeat and short accidental presses, disarm ordinary Ctrl combinations, and cancel pending setup when hold mode releases. Native listener failure disables single-key activation and restores the saved combination when available. Fn is shown as unavailable because it has no standard Windows virtual-key event; no firmware/driver workaround is bundled.
+
 ## 0.1.9 — validation
 
 Keep idle WebSocket transport alive using control pings, with no audio or transcription input. Detect unanswered pings. Renew server-ended idle sessions and allow at most three delayed retries (30, 60 and 120 seconds) for temporary idle network failures. Quota, key, model and policy errors stop retries; active dictation failures never replay speech. All setup attempts still share the four-per-minute guard. This addresses the longer idle disconnect observed after the initial 0.1.8 acceptance.

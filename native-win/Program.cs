@@ -9,7 +9,7 @@ using System.Windows.Automation;
 using System.Windows.Automation.Text;
 
 // Private, bounded JSON-lines protocol on inherited pipes. No network, shell,
-// clipboard reader command, text scraping, keyboard hooks or arbitrary HWND API.
+// clipboard reader command, text scraping or arbitrary HWND/key-listener API.
 internal static class Program {
   [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
   [StructLayout(LayoutKind.Sequential)] struct RECT { public int Left, Top, Right, Bottom; }
@@ -51,6 +51,7 @@ internal static class Program {
   static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 220000 };
   static readonly Dictionary<string, Target> Targets = new Dictionary<string, Target>();
   static IntPtr clipboardOwner;
+  static ShortcutListener shortcut;
   sealed class Target {
     public IntPtr Window, Focus;
     public uint Pid, Thread;
@@ -345,6 +346,14 @@ internal static class Program {
           var request=Json.Deserialize<Dictionary<string,object>>(line); id=Convert.ToInt32(request["id"]);
           string command=Convert.ToString(request["command"]); object result;
           if (command=="ping") result=new { version=1, architecture="x64" };
+          else if (command=="watchShortcut") {
+            if(shortcut!=null) { shortcut.Dispose(); shortcut=null; }
+            int generation=Convert.ToInt32(request["generation"]);
+            if(generation<1)throw new InvalidOperationException("shortcut-unavailable");
+            if(Convert.ToBoolean(request["enabled"]))
+              shortcut=new ShortcutListener(state=>Console.WriteLine("{\"event\":\"shortcut\",\"generation\":"+generation+",\"state\":\""+state+"\"}"));
+            result=new { watching=shortcut!=null };
+          }
           else if (command=="cue") { CuePlayer.Play(Convert.ToString(request["cue"])); result=new { played=true }; }
           else if (command=="capture") result=Capture(Convert.ToInt32(request["ownPid"]),request.ContainsKey("allowPractice") && Convert.ToBoolean(request["allowPractice"]));
           else if (command=="insert") result=Insert(Convert.ToString(request["token"]),Convert.ToString(request["text"]),Convert.ToString(request["method"]));
@@ -358,6 +367,7 @@ internal static class Program {
         }
       }
       ClearTargets();
+      if(shortcut!=null)shortcut.Dispose();
       CuePlayer.Close();
     }
   }

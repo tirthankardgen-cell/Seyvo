@@ -40,6 +40,8 @@ Seyvo lets you dictate into a supported Windows application with a global shortc
 
 After saving your key, run **Test microphone**, stop the test, and select your preferred device. Configure your shortcut; the default is **Ctrl + Shift + Space**. **Escape** cancels dictation. Inspect the result before sending it or retrying insertion.
 
+Version 0.1.10 also offers **Settings → Activation method → Single key → Right Ctrl**. Hold for three seconds to start, then either keep holding while speaking and release to finish, or select **Hold to start** to release, speak and tap/release again to finish. Existing installations keep their saved combination as the default. Bare **Fn** has no standard Windows key event and is shown as unavailable; Right Ctrl provides the single-key behavior.
+
 <details>
 <summary><strong>Installation and everyday controls</strong></summary>
 

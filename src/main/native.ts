@@ -2,6 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { z } from 'zod';
 import { AppError } from '../shared/errors';
+import type { ShortcutEdge } from './single-key-shortcut';
 export const targetSchema = z.object({
   token: z.string(),
   app: z.string(),
@@ -28,6 +29,9 @@ export class NativeBridge {
     { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
   >();
   available = false;
+  onShortcut?: (edge: ShortcutEdge) => void;
+  onUnavailable?: () => void;
+  private shortcutGeneration = 0;
   constructor(private executable: string) {}
   async start(): Promise<void> {
     const child = spawn(this.executable, [], {
@@ -42,6 +46,20 @@ export class NativeBridge {
         return;
       }
       try {
+        const input: unknown = JSON.parse(line);
+        const shortcut = z
+          .object({
+            event: z.literal('shortcut'),
+            generation: z.number().int().positive(),
+            state: z.enum(['down', 'up', 'interrupted']),
+          })
+          .strict()
+          .safeParse(input);
+        if (shortcut.success) {
+          if (shortcut.data.generation === this.shortcutGeneration)
+            this.onShortcut?.(shortcut.data.state);
+          return;
+        }
         const reply = z
           .object({
             id: z.number().int(),
@@ -49,7 +67,7 @@ export class NativeBridge {
             result: z.unknown().optional(),
             error: z.string().max(80).optional(),
           })
-          .parse(JSON.parse(line));
+          .parse(input);
         const pending = this.pending.get(reply.id);
         if (!pending) return;
         clearTimeout(pending.timer);
@@ -69,6 +87,8 @@ export class NativeBridge {
     this.available = true;
   }
   private errorMessage(code?: string): string {
+    if (code === 'shortcut-unavailable')
+      return 'The single-key listener is unavailable. Choose Key combination or restart Seyvo.';
     if (code === 'sound-unavailable')
       return 'Windows could not play the sound. Check your output device and volume mixer.';
     if (code === 'input-already-attempted')
@@ -86,7 +106,7 @@ export class NativeBridge {
     return 'The original field is unavailable, changed, or protected. Nothing further was inserted. Copy your text or refocus the original field and retry.';
   }
   request(
-    command: 'ping' | 'capture' | 'insert' | 'clear' | 'cue',
+    command: 'ping' | 'capture' | 'insert' | 'clear' | 'cue' | 'watchShortcut',
     fields: Record<string, unknown> = {},
     timeoutMs = 5000,
   ): Promise<unknown> {
@@ -112,6 +132,10 @@ export class NativeBridge {
       await this.request('capture', { ownPid: process.pid, allowPractice }),
     );
   }
+  async watchShortcut(enabled: boolean): Promise<void> {
+    const generation = ++this.shortcutGeneration;
+    await this.request('watchShortcut', { enabled, generation });
+  }
   async cue(cue: 'start' | 'stop' | 'error'): Promise<void> {
     await this.request('cue', { cue });
   }
@@ -132,5 +156,6 @@ export class NativeBridge {
       );
     }
     this.pending.clear();
+    if (child) this.onUnavailable?.();
   }
 }
