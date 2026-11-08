@@ -37,3 +37,7 @@ Yes. Start with [CONTRIBUTING.md](../CONTRIBUTING.md) and the [Code of Conduct](
 ## Is paid support available?
 
 The repository currently offers community issue tracking with no response-time SLA or paid support contract. Report security issues using [SECURITY.md](../SECURITY.md). Signing, broader acceptance testing and formal name clearance remain launch requirements.
+
+## Why is Google connected while the microphone is off?
+
+Keep Google ready prepares a setup-only connection so the shortcut can start capture without the usual network handshake. No audio or silence is sent while idle. The connection is renewed before expiry, and pause, sleep, lock, key removal or quit closes it. Turn this setting off to connect only when activating dictation. Local connection attempts are capped at four per rolling minute; provider errors stop automatic retries. This reduces unnecessary traffic but cannot guarantee your project stays in Google's free tier or avoid paid-project charges.

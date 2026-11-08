@@ -9,9 +9,9 @@
 Open-source voice dictation for Windows.<br />
 Your Gemini key. Your applications. No Seyvo subscription.
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows_x64-2563eb?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows_x64-2563eb?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.8/Seyvo-0.1.8-windows-x64-setup.exe)
 [![MIT license](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.1.7_prerelease-64748b?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
+[![Release](https://img.shields.io/badge/Release-0.1.8_prerelease-64748b?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.8)
 
 [Get started](#get-started) · [Features](#built-for-your-workflow) · [Privacy](#your-key-your-data) · [Develop](#build-and-contribute) · [Documentation](#documentation)
 
@@ -24,7 +24,7 @@ Seyvo lets you dictate into a supported Windows application with a global shortc
 <p align="center">
   <img src="docs/assets/dashboard-0.1.7.png" alt="Seyvo dashboard in the installed Windows app, with the microphone off" width="960" />
   <br />
-  <sub>The actual installed application. Microphone off until you activate it.</sub>
+  <sub>The installed 0.1.7 interface. Microphone off until you activate it; 0.1.8 adds connection readiness.</sub>
 </p>
 
 > [!IMPORTANT]
@@ -36,7 +36,7 @@ Seyvo lets you dictate into a supported Windows application with a global shortc
 | :--- | :--- | :--- |
 | Download the **Windows x64 installer** and install for your account. | Get your key from **[Google AI Studio](https://aistudio.google.com/apikey)**, then select **Save & test** in Seyvo. | Focus a supported text field. Press your shortcut to start, speak, and press it again to finish. |
 
-**[Download v0.1.7](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/Seyvo-0.1.7-windows-x64-setup.exe)** · [Verify SHA256](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.7/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7)
+**[Download v0.1.8](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.8/Seyvo-0.1.8-windows-x64-setup.exe)** · [Verify SHA256](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.8/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.8)
 
 After saving your key, run **Test microphone**, stop the test, and select your preferred device. Configure your shortcut; the default is **Ctrl + Shift + Space**. **Escape** cancels dictation. Inspect the result before sending it or retrying insertion.
 
@@ -59,7 +59,7 @@ After saving your key, run **Test microphone**, stop the test, and select your p
 | Capability | What you get |
 | :--- | :--- |
 | **Natural dictation** | Smart or Verbatim Gemini transcription, automatic language recognition and vocabulary hints. |
-| **Shortcut control** | Global toggle shortcut, conflict feedback, tray controls and a visible microphone level bubble. |
+| **Shortcut control** | Ready Google connection, global toggle shortcut, conflict feedback, tray controls and a visible microphone level bubble. |
 | **Careful insertion** | Original-target checks, conditional clipboard restoration, direct single-line Unicode input and recovery when insertion is uncertain. No auto-submit. |
 | **Personal vocabulary** | Dictionary editing, import/export and coding vocabulary support. |
 | **Desktop preferences** | Themes, optional sound cues, bubble sizes and placement, plus a Windows sign-in startup preference. |
@@ -94,13 +94,13 @@ Read the **[privacy policy](PRIVACY.md)**, [security policy](SECURITY.md) and [t
 
 ## Release and compatibility
 
-**Current download: v0.1.7 · Windows x64 · unsigned prerelease.** This release improves screenshot/browser clipboard restoration, the transparent microphone bubble and Windows sign-in startup behavior.
+**Current download: v0.1.8 · Windows x64 · unsigned prerelease.** Google prepares in the background so your shortcut can open the microphone without waiting for network setup. No audio or silence is sent while idle. Keep Google ready can be disabled; connections are capped at four attempts per minute and provider errors stop automatic retries. Google billing still depends on your project.
 
 | Area | Recorded status |
 | :--- | :--- |
 | Initial platform | Windows 11 x64. Windows 10 requires further runtime and installation validation. ARM64, macOS and Linux application support are not shipped. |
-| Windows acceptance | Installed human English, Hindi and Hinglish checks passed with exact paste and clipboard restoration. Multilingual multiline paste was also checked in Edge, Word and VS Code. |
-| Automated coverage | Current source records 55 automated tests and 11 Electron scenarios. Mocked tests, real provider observations and installed-app checks are documented separately. |
+| Windows acceptance | 0.1.8 passed two installed real-Google/generated-speech insertions with microphone teardown and no setup wait. Human English/Hindi/Hinglish and Edge/Word/VS Code observations remain the recorded 0.1.7 acceptance. |
+| Automated coverage | Current source passes 64 automated tests and 11 Electron scenarios, including Windows CI. Mocked tests, real provider observations and installed-app checks are documented separately. |
 | Signing | SignPath Foundation review pending; current downloads are unsigned. |
 | Further acceptance | Clean-machine, physical and accessibility coverage remain open, alongside an intermittent shutdown-test timeout. |
 
@@ -167,6 +167,6 @@ Seyvo is independently developed and is not affiliated with Google or Wispr Flow
 <strong>Seyvo · Speak. Refine. Paste.</strong><br />
 Built for Windows. Open for everyone to contribute.
 
-[Download](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.7) · [Source](https://github.com/tirthankardgen-cell/Seyvo) · [Issues](https://github.com/tirthankardgen-cell/Seyvo/issues)
+[Download](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.8) · [Source](https://github.com/tirthankardgen-cell/Seyvo) · [Issues](https://github.com/tirthankardgen-cell/Seyvo/issues)
 
 </div>

@@ -3,7 +3,7 @@ import type { AudioTranscriptionConfig, LiveServerMessage } from '@google/genai'
 import { brand } from '../../shared/brand';
 import type { Settings } from '../../shared/contracts';
 import { providerVocabulary } from '../../shared/vocabulary';
-import { AppError, providerError } from '../../shared/errors';
+import { AppError, ConnectionError, providerError } from '../../shared/errors';
 import { TranscriptAssembler } from './assembler';
 import type { FinalTranscript, TranscriptionProvider } from './provider';
 
@@ -22,6 +22,7 @@ export class GeminiLive implements TranscriptionProvider {
   private terminal = false;
   private end?: (value: FinalTranscript) => void;
   private interval?: NodeJS.Timeout;
+  private heartbeat?: NodeJS.Timeout;
   private detach?: () => void;
   get text(): string {
     return this.assembler.text;
@@ -50,8 +51,18 @@ export class GeminiLive implements TranscriptionProvider {
         `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(key)}`,
       );
       this.socket = socket;
+      let answered = true;
+      socket.on('pong', () => {
+        answered = true;
+      });
       const timeout = setTimeout(
-        () => fault(new AppError('Google setup timed out. Check your network and account access.')),
+        () =>
+          fault(
+            new ConnectionError(
+              'Google setup timed out. Check your network and account access.',
+              'transient',
+            ),
+          ),
         12000,
       );
       const fault = (error: Error): void => {
@@ -103,6 +114,15 @@ export class GeminiLive implements TranscriptionProvider {
           if (message.setupComplete && !this.ready) {
             this.ready = true;
             clearTimeout(timeout);
+            this.heartbeat = setInterval(() => {
+              if (!answered) {
+                fault(providerError('timeout'));
+                return;
+              }
+              answered = false;
+              // WebSocket control frame only: no audio, silence or model input.
+              socket.ping();
+            }, 20000);
             resolve();
           }
           const content = message.serverContent;
@@ -123,8 +143,9 @@ export class GeminiLive implements TranscriptionProvider {
           }
           if (message.goAway)
             fault(
-              new AppError(
+              new ConnectionError(
                 'Google is ending this session. Completed text has been preserved; start a new dictation.',
+                'renew',
               ),
             );
         } catch {
@@ -191,6 +212,8 @@ export class GeminiLive implements TranscriptionProvider {
   close(): void {
     this.closing = true;
     this.ready = false;
+    clearInterval(this.heartbeat);
+    this.heartbeat = undefined;
     this.detach?.();
     this.detach = undefined;
     this.settle(false);

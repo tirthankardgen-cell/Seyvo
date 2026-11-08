@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settingsSchema } from '../../src/shared/contracts';
-import { AppError } from '../../src/shared/errors';
+import { AppError, ConnectionError } from '../../src/shared/errors';
 import { ConnectionBudget, StandbyConnection } from '../../src/main/transcription/standby';
 
 function mockProvider() {
@@ -34,6 +34,43 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 describe('silent Google standby and request budget', () => {
+  it('bounds temporary idle failures to three retries and never retries speech or quota failures', async () => {
+    const f = fixture();
+    f.pool.configure(f.settings, true);
+    await vi.advanceTimersByTimeAsync(0);
+    for (const delay of [30000, 60000, 120000]) {
+      const current = f.providers.at(-1)!;
+      current.connect.mock.calls[0]![4](new ConnectionError('Network disconnected.', 'transient'));
+      const count = f.providers.length;
+      f.pool.configure({ ...f.settings, theme: 'light' }, true);
+      await vi.advanceTimersByTimeAsync(delay - 1);
+      expect(f.providers).toHaveLength(count);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(f.providers).toHaveLength(count + 1);
+    }
+    f.providers
+      .at(-1)!
+      .connect.mock.calls[0]![4](new ConnectionError('Network disconnected.', 'transient'));
+    await vi.advanceTimersByTimeAsync(600000);
+    expect(f.providers).toHaveLength(4);
+    expect(f.pool.message).toContain('Automatic reconnect is stopped');
+    f.pool.stop();
+  });
+  it('renews an idle server-ended session without audio, and cancels pending retries on stop', async () => {
+    const f = fixture();
+    f.pool.configure(f.settings, true);
+    await vi.advanceTimersByTimeAsync(0);
+    f.providers[0]!.connect.mock.calls[0]![4](
+      new ConnectionError('Server session ended.', 'renew'),
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(f.providers).toHaveLength(2);
+    expect(f.providers[1]!.begin).not.toHaveBeenCalled();
+    f.providers[1]!.connect.mock.calls[0]![4](new ConnectionError('Network lost.', 'transient'));
+    f.pool.stop();
+    await vi.advanceTimersByTimeAsync(600000);
+    expect(f.providers).toHaveLength(2);
+  });
   it('prepares one socket without starting activity or audio, and transfers it to explicit activation', async () => {
     const f = fixture();
     f.pool.configure(f.settings, true);

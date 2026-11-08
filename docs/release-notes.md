@@ -1,9 +1,9 @@
-Seyvo 0.1.8 — faster shortcut, bounded background connection.
+Seyvo 0.1.9 — ready Google connection, microphone off.
 
-Keep Google ready before pressing Ctrl+Alt+Space or your chosen shortcut. The microphone stays off until explicit activation. A preloaded recorder page removes repeated page startup, while the ready Google session avoids the network setup wait. Each dictation still finalizes and inserts only into the original validated field, without submitting it.
+Prepare Google before pressing Ctrl+Alt+Space or your chosen shortcut. The microphone stays off until explicit activation; the ready connection removes the network setup wait. Each dictation finalizes and inserts only into the original validated field, without submitting it.
 
-No audio or silence is sent while idle. Connections renew before expiry, within a four-attempts-per-minute local limit shared with key tests and foreground setup. Provider and quota errors stop automatic retries. Pause, Windows lock/sleep, removing the key and Quit close standby. Keep Google ready can be disabled in Settings.
+WebSocket control pings maintain idle transport without sending audio, silence or model input. Renew server-ended idle sessions; temporary idle network failures receive at most three delayed retries (30, 60 and 120 seconds). Quota, credential, model and policy errors stop retries. Active speech never retries. All connection attempts, including key tests, share a four-attempts-per-minute local limit. Pause, Windows lock/sleep, key removal and Quit close standby. Keep Google ready can be disabled in Settings.
 
-Google lists free-tier Live Transcribe access, but the app cannot establish your project's billing tier or account-wide quota. A paid project can incur charges; local request limits are not a zero-cost guarantee. No additional rewrite model or automatic paid fallback is used.
+Google lists free-tier Live Transcribe access, but the app cannot establish your project's billing tier or account-wide quota. A paid project can incur charges; local request limits are not a zero-cost guarantee. No extra rewrite model or automatic paid fallback is used.
 
-This remains an unsigned Windows x64 validation prerelease. Signing approval, clean-machine and broader physical/accessibility acceptance remain open. See tests/manual-windows-qa.md for version-specific observations and limits.
+This remains an unsigned Windows x64 validation prerelease. Signing approval, clean-machine and broader physical/accessibility acceptance remain open. See tests/manual-windows-qa.md for version-specific observations and limits. The 0.1.8 ten-second idle observation was insufficient; this update addresses the later idle disconnect with keepalives and bounded recovery.

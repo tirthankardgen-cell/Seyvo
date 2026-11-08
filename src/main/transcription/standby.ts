@@ -1,5 +1,5 @@
 import type { Settings, Status } from '../../shared/contracts';
-import { AppError, publicError } from '../../shared/errors';
+import { AppError, ConnectionError, publicError } from '../../shared/errors';
 import type { TranscriptionProvider } from './provider';
 
 // A local guard, not a claim about the user's project-wide Google quota or tier.
@@ -39,6 +39,7 @@ export class StandbyConnection {
   private timer?: NodeJS.Timeout;
   private enabled = false;
   private blocked = false;
+  private failures = 0;
   private settings?: Settings;
   constructor(
     private factory: () => TranscriptionProvider,
@@ -75,7 +76,10 @@ export class StandbyConnection {
       if (!this.entry?.owner) this.change('off', 'Connects when you start dictation.');
       return;
     }
-    if (!wasEnabled || changed) this.blocked = false;
+    if (!wasEnabled || changed) {
+      this.blocked = false;
+      this.failures = 0;
+    }
     this.prepare();
   }
   stop(): void {
@@ -109,13 +113,14 @@ export class StandbyConnection {
         this.change('ready', 'Google ready. Microphone off.');
         this.timer = setTimeout(
           () => {
+            this.failures = 0;
             this.discardIdle();
             this.prepare();
           },
           Math.max(1, this.lifetime(this.settings!) - (Date.now() - entry.started)),
         );
       })
-      .catch(() => {}); // open reports only redacted errors; no retry on failure.
+      .catch(() => {}); // open reports redacted errors and owns bounded idle retry.
   }
   private open(settings: Settings, key: () => Promise<string>): Entry {
     const entry: Entry = {
@@ -130,6 +135,26 @@ export class StandbyConnection {
     this.change('connecting', 'Preparing Google. Microphone stays off until activation.');
     const fault = (error: Error): void => {
       if (this.entry !== entry) return;
+      if (
+        !entry.owner &&
+        this.enabled &&
+        error instanceof ConnectionError &&
+        (error.retry === 'renew' || (error.retry === 'transient' && this.failures < 3))
+      ) {
+        const delay = error.retry === 'renew' ? 5000 : 30000 * 2 ** this.failures++;
+        this.discardIdle();
+        // Preserve this deadline across unrelated preference changes.
+        this.blocked = true;
+        this.change(
+          'limited',
+          'Google connection interrupted. Reconnecting shortly; microphone stays off.',
+        );
+        this.timer = setTimeout(() => {
+          this.blocked = false;
+          this.prepare();
+        }, delay);
+        return;
+      }
       this.blocked = true;
       this.change('limited', `${publicError(error)} Automatic reconnect is stopped.`);
       entry.owner?.failed(error);
@@ -194,6 +219,7 @@ export class StandbyConnection {
         clearTimeout(this.timer);
         this.timer = undefined;
         this.blocked = false; // A shortcut is an explicit retry, never a retry loop.
+        this.failures = 0;
         held = this.entry ?? this.open(settings, async () => key);
         held.owner = { interim, failed };
         signal.addEventListener('abort', release, { once: true });

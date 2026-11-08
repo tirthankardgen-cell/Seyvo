@@ -10,6 +10,7 @@ class Socket extends EventEmitter {
     this.sent.push(JSON.parse(data));
   }
   terminate = vi.fn();
+  ping = vi.fn(() => this.emit('pong'));
   message(value: unknown) {
     this.emit('message', Buffer.from(JSON.stringify(value)));
   }
@@ -38,6 +39,23 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Google wire adapter', () => {
+  it('keeps idle transport alive using control pings without model input and closes missed heartbeats', async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    const ready = f.connect();
+    f.socket.emit('open');
+    f.socket.message({ setupComplete: {} });
+    await ready;
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(f.socket.ping).toHaveBeenCalledTimes(3);
+    expect(f.socket.sent).toHaveLength(1);
+    f.socket.ping.mockImplementation(() => false);
+    await vi.advanceTimersByTimeAsync(40000);
+    expect(f.error).toHaveBeenCalledOnce();
+    expect(f.socket.terminate).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(f.socket.ping).toHaveBeenCalledTimes(4);
+  });
   it('keeps setup-only standby silent and ignores unsolicited transcripts until explicit begin', async () => {
     const f = fixture();
     const ready = f.connect();

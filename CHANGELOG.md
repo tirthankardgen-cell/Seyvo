@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9 — validation
+
+Keep idle WebSocket transport alive using control pings, with no audio or transcription input. Detect unanswered pings. Renew server-ended idle sessions and allow at most three delayed retries (30, 60 and 120 seconds) for temporary idle network failures. Quota, key, model and policy errors stop retries; active dictation failures never replay speech. All setup attempts still share the four-per-minute guard. This addresses the longer idle disconnect observed after the initial 0.1.8 acceptance.
+
 ## 0.1.8 — validation
 
 Prepare a silent Google connection before the shortcut so dictation can open the microphone without waiting for network setup. Keep the sandboxed recorder page loaded, with microphone permission limited to explicit activation. Stop releases tracks; each dictation gets fresh transcript state. Idle socket renewal reserves the configured recording duration within Google's session limit.
