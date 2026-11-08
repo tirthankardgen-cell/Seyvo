@@ -117,7 +117,7 @@ describe('silent Google standby and request budget', () => {
   it('renews before expiry while reserving the full dictation and finalization duration', async () => {
     const f = fixture();
     f.pool.configure(f.settings, true);
-    await vi.advanceTimersByTimeAsync(269999);
+    await vi.advanceTimersByTimeAsync(44999);
     expect(f.providers).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(1);
     expect(f.providers).toHaveLength(2);

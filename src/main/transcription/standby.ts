@@ -59,7 +59,9 @@ export class StandbyConnection {
   private lifetime(settings: Settings): number {
     // Reserve the entire configured recording plus setup/finalization margin
     // within Google's ten-minute session limit, measured from connection start.
-    return (600 - settings.maxSeconds - 30) * 1000;
+    // Real Google idle sessions closed at ~60 s with code 1008 despite pong
+    // replies. Renew beforehand without sending billable silence/model input.
+    return Math.min(45, 600 - settings.maxSeconds - 30) * 1000;
   }
   private change(state: Status['connectionState'], message: string): void {
     this.state = state;
