@@ -9,9 +9,9 @@
 Open-source voice dictation for Windows.<br />
 Your Gemini key. Your applications. No Seyvo subscription.
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows_x64-2563eb?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.9/Seyvo-0.1.9-windows-x64-setup.exe)
+[![Download for Windows](https://img.shields.io/badge/Download-Windows_x64-2563eb?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.10/Seyvo-0.1.10-windows-x64-setup.exe)
 [![MIT license](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-0.1.9_prerelease-64748b?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.9)
+[![Release](https://img.shields.io/badge/Release-0.1.10_prerelease-64748b?style=for-the-badge)](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.10)
 
 [Get started](#get-started) · [Features](#built-for-your-workflow) · [Privacy](#your-key-your-data) · [Develop](#build-and-contribute) · [Documentation](#documentation)
 
@@ -36,7 +36,7 @@ Seyvo lets you dictate into a supported Windows application with a global shortc
 | :--- | :--- | :--- |
 | Download the **Windows x64 installer** and install for your account. | Get your key from **[Google AI Studio](https://aistudio.google.com/apikey)**, then select **Save & test** in Seyvo. | Focus a supported text field. Press your shortcut to start, speak, and press it again to finish. |
 
-**[Download v0.1.9](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.9/Seyvo-0.1.9-windows-x64-setup.exe)** · [Verify SHA256](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.9/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.9)
+**[Download v0.1.10](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.10/Seyvo-0.1.10-windows-x64-setup.exe)** · [Verify SHA256](https://github.com/tirthankardgen-cell/Seyvo/releases/download/v0.1.10/SHA256SUMS.txt) · [Release notes, SBOM and licenses](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.10)
 
 After saving your key, run **Test microphone**, stop the test, and select your preferred device. Configure your shortcut; the default is **Ctrl + Shift + Space**. **Escape** cancels dictation. Inspect the result before sending it or retrying insertion.
 
@@ -96,13 +96,13 @@ Read the **[privacy policy](PRIVACY.md)**, [security policy](SECURITY.md) and [t
 
 ## Release and compatibility
 
-**Current download: v0.1.9 · Windows x64 · unsigned prerelease.** Google prepares in the background so your shortcut can open the microphone without waiting for network setup. No audio or silence is sent while idle. Keep Google ready can be disabled. Idle connections renew every 45 seconds by default; startup, renewal or network interruption can still delay a shortcut. All setups share a cap of four attempts per minute. Temporary idle failures get three delayed retries; quota, key and policy errors stop retries. Google billing still depends on your project.
+**Current download: v0.1.10 · Windows x64 · unsigned prerelease.** Google prepares in the background so your shortcut can open the microphone without waiting for network setup. No audio or silence is sent while idle. Keep Google ready can be disabled. Idle connections renew every 45 seconds by default; startup, renewal or network interruption can still delay a shortcut. All setups share a cap of four attempts per minute. Temporary idle failures get three delayed retries; quota, key and policy errors stop retries. Google billing still depends on your project.
 
 | Area | Recorded status |
 | :--- | :--- |
 | Initial platform | Windows 11 x64. Windows 10 requires further runtime and installation validation. ARM64, macOS and Linux application support are not shipped. |
-| Windows acceptance | 0.1.9 passed five minutes of idle renewal with the microphone off, then two installed real-Google/generated-speech insertions with microphone teardown and no setup wait. Human English/Hindi/Hinglish and Edge/Word/VS Code observations remain the recorded 0.1.7 acceptance. |
-| Automated coverage | Current source passes 67 automated tests and 11 Electron scenarios, including Windows CI. Mocked tests, real provider observations and installed-app checks are documented separately. |
+| Windows acceptance | 0.1.10 passed installed Right Ctrl hold/toggle using Win32 input and real Google/generated speech, exact native insertion, microphone teardown and upgrade preservation. 0.1.9 passed five minutes of idle renewal with the microphone off, then two installed real-Google/generated-speech insertions with microphone teardown and no setup wait. Human English/Hindi/Hinglish and Edge/Word/VS Code observations remain the recorded 0.1.7 acceptance. |
+| Automated coverage | Current source passes 73 automated tests and 12 Electron scenarios, including Windows CI. Mocked tests, real provider observations and installed-app checks are documented separately. |
 | Signing | SignPath Foundation review pending; current downloads are unsigned. |
 | Further acceptance | Clean-machine, physical and accessibility coverage remain open, alongside an intermittent shutdown-test timeout. |
 
@@ -111,7 +111,7 @@ Read the **[privacy policy](PRIVACY.md)**, [security policy](SECURITY.md) and [t
 <details>
 <summary><strong>Supported boundaries and insertion limitations</strong></summary>
 
-Seyvo cannot guarantee insertion into administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Another application's acceptance cannot universally be confirmed. The last result stays available until the next dictation, Dismiss or exit. Push-to-talk is not shipped.
+Seyvo cannot guarantee insertion into administrator apps, password/read-only fields, secure desktops, remote sessions, terminals or custom editors. Another application's acceptance cannot universally be confirmed. The last result stays available until the next dictation, Dismiss or exit. Optional Right Ctrl push-to-talk is available; bare Fn is not supported.
 
 Direct Unicode input is refused for Notepad because the tested Windows 11 version changed the fixture text. Clipboard paste passed with Hindi, emoji and multiple paragraphs in an owned Notepad document. Inspect results before retrying.
 
@@ -169,6 +169,6 @@ Seyvo is independently developed and is not affiliated with Google or Wispr Flow
 <strong>Seyvo · Speak. Refine. Paste.</strong><br />
 Built for Windows. Open for everyone to contribute.
 
-[Download](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.9) · [Source](https://github.com/tirthankardgen-cell/Seyvo) · [Issues](https://github.com/tirthankardgen-cell/Seyvo/issues)
+[Download](https://github.com/tirthankardgen-cell/Seyvo/releases/tag/v0.1.10) · [Source](https://github.com/tirthankardgen-cell/Seyvo) · [Issues](https://github.com/tirthankardgen-cell/Seyvo/issues)
 
 </div>

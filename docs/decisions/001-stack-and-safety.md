@@ -8,6 +8,6 @@ Node 26.13.0 LTS, Electron 45.2.3, React 19.3.1, Vite 8.3.6 and Google Gen AI 3.
 
 CSS tokens and semantic native HTML controls replace suggested Tailwind/Radix; this avoids dependencies for controls already covered by native keyboard behavior. No external fonts or copied competitor assets.
 
-Safe insertion takes priority over claiming universal compatibility. Changed targets are refused, clipboard formats outside the audited set cause refusal, and successful OS input still has an uncertainty message. Push-to-talk remains visibly unavailable until a real key-up helper and physical keyboard acceptance are validated. Update UI opens a fixed real GitHub Releases page rather than claiming a secure automatic updater exists.
+Safe insertion takes priority over claiming universal compatibility. Changed targets are refused, clipboard formats outside the audited set cause refusal, and successful OS input still has an uncertainty message. The 0.1.10 validation prerelease enables optional Right Ctrl push-to-talk after native Win32 key-up and installed real-provider checks. Physical keyboard acceptance remains a stable-release gate; bare Fn is visibly unavailable. Update UI opens a fixed real GitHub Releases page rather than claiming a secure automatic updater exists.
 
 The native helper and browser process must be installed without elevation. Do not bypass UIPI or demand admin rights to fix compatibility.

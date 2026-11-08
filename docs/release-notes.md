@@ -1,13 +1,14 @@
-Seyvo 0.1.9 — ready Google connection, microphone off.
+Seyvo 0.1.10 — optional one-key dictation.
 
-Prepare Google before pressing Ctrl+Alt+Space or your chosen shortcut. The microphone stays off until explicit activation; the ready connection removes the network setup wait. Each dictation finalizes and inserts only into the original validated field, without submitting it.
+Your existing key combination stays selected by default. In Settings, choose **Activation method → Single key → Right Ctrl**, then choose:
 
-WebSocket control pings maintain idle transport without sending audio, silence or model input. Google ends silent sessions after about 60 seconds on the tested account, so idle connections refresh every 45 seconds (about 1.33 setups/minute by default), within the local request cap. Renew server-ended idle sessions; temporary idle network failures receive at most three delayed retries (30, 60 and 120 seconds). Quota, credential, model and policy errors stop retries. Active speech never retries. All connection attempts, including key tests, share a four-attempts-per-minute local limit. Pause, Windows lock/sleep, key removal and Quit close standby. Keep Google ready can be disabled in Settings.
+- **Hold to talk:** hold Right Ctrl for three seconds, speak while holding, and release to finish.
+- **Hold to start:** hold for three seconds, release and speak, then tap/release Right Ctrl again to finish.
 
-Google lists free-tier Live Transcribe access, but the app cannot establish your project's billing tier or account-wide quota. A paid project can incur charges; local request limits are not a zero-cost guarantee. No extra rewrite model or automatic paid fallback is used.
+Wait for Listening before speaking. Short presses do not open the microphone, normal Ctrl combinations keep working, and Pause disables the listener. Switching back restores your saved combination. Bare Fn has no standard Windows key event and is shown as unavailable; it is not advertised as working.
 
-Verified on the installed 0.1.9 build `d7fd521fc73a`: five minutes of real-Google idle operation with the microphone off, including repeated renewals, followed by two real Windows shortcut/generated-speech sessions with exact finalized-text paste. Both skipped Google setup at activation; shortcut-to-listening measured 611 ms and 143 ms on this workstation. Every captured track ended after Stop, and the app exited cleanly. Renewal briefly reconnects, so activation during startup, renewal or a network outage can still wait. This is synthetic-audio provider acceptance, not a new physical-speech latency or human-language guarantee.
+Verified on installed build `64ba3b8651e3`: both gestures through actual Windows input events, real Google transcription of generated speech, exact native insertion, microphone teardown, upgrade with unchanged encrypted key/preferences, and packaged smoke checks. These are automated Windows key events, not physical keyboard presses or a new human-speech accuracy claim. The source passed 73 core tests and all 12 Electron scenarios in Windows CI. See [the validation record](https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/shortcut-validation-0.1.10.md).
 
-All 67 unit/integration tests, 11 Electron scenarios and Windows CI passed. Packaged smoke passed, including local physical microphone open/stop, production isolation and native availability. The installed upgrade preserved the saved encrypted key and preferences. Installer SHA256: `c38ef64895d138acbe2c39ca383c179a6e24999e6c777d61996aba651bbaa6bd` (124743171 bytes).
+This is an **unsigned Windows x64 validation prerelease**, not a stable release. Signing, clean-machine and remaining physical acceptance gates remain open. No automatic updater is included.
 
-This remains an unsigned Windows x64 validation prerelease. Signing approval, clean-machine and broader physical/accessibility acceptance remain open. See tests/manual-windows-qa.md for version-specific observations and limits. The 0.1.8 ten-second idle observation was insufficient; this update passed the longer gate after adding renewal before Google's observed silent-session deadline.
+Installer SHA256: `f734d86958470696de817a4ef8e92a44b2620f39946aa604393c9af32e5f0dac`.
