@@ -196,8 +196,8 @@ export class Windows {
     if (event.senderFrame?.url.split('#')[0] !== this.url(page))
       throw new AppError('Untrusted application page.');
   }
-  async record(id: string, deviceId: string): Promise<void> {
-    this.recordingId = id;
+  async prepareRecorder(): Promise<void> {
+    if (this.quitting) return;
     if (!this.recorder || this.recorder.isDestroyed()) {
       const window = new BrowserWindow({ show: false, webPreferences: this.webPreferences(true) });
       this.recorder = window;
@@ -221,6 +221,10 @@ export class Windows {
       this.recorderReady = window.loadURL(this.url('recorder.html'));
     }
     await this.recorderReady;
+  }
+  async record(id: string, deviceId: string): Promise<void> {
+    this.recordingId = id;
+    await this.prepareRecorder();
     if (this.recordingId !== id) throw new AppError('Microphone operation cancelled.');
     this.recordingAllowed = true;
     await this.command({ kind: 'start', id, deviceId }, 'started');
@@ -229,16 +233,22 @@ export class Windows {
     if (this.recordingId && this.recordingId !== id) return;
     if (cancel && this.recordingId === id) this.recordingId = undefined;
     if (!this.recorder || this.recorder.isDestroyed()) return;
+    let stopped = false;
     try {
       if (this.recordingAllowed)
         await this.command({ kind: cancel ? 'cancel' : 'stop', id }, 'stopped');
+      stopped = true;
     } finally {
       this.recordingAllowed = false;
       if (this.recordingId === id) this.recordingId = undefined;
-      const finished = this.recorder;
-      this.recorder = undefined;
-      this.recorderReady = undefined;
-      if (finished && !finished.isDestroyed()) finished.destroy();
+      // Keep only the loaded local page, with no tracks or permission to record.
+      // Unacknowledged cleanup still destroys the renderer as a hard stop.
+      if (!stopped) {
+        const finished = this.recorder;
+        this.recorder = undefined;
+        this.recorderReady = undefined;
+        if (finished && !finished.isDestroyed()) finished.destroy();
+      }
     }
   }
   private command(command: RecorderCommand, kind: string): Promise<void> {
@@ -272,6 +282,13 @@ export class Windows {
       else ack.resolve();
     }
     if (event.kind === 'stopped' || event.kind === 'error') this.recordingAllowed = false;
+    if (event.kind === 'error' && this.recordingId === event.id) {
+      const failed = this.recorder;
+      this.recorder = undefined;
+      this.recorderReady = undefined;
+      this.recordingId = undefined;
+      if (failed && !failed.isDestroyed()) failed.destroy();
+    }
   }
   isRecordingSession(id: string): boolean {
     return this.recordingAllowed && this.recordingId === id;

@@ -31,6 +31,7 @@ export const settingsSchema = z
     onboardingComplete: z.boolean().default(false),
     shortcut: shortcutSchema.default('Control+Shift+Space'),
     paused: z.boolean().default(false),
+    keepConnectionReady: z.boolean().default(true),
     startMinimized: z.boolean().default(false),
     closeToTray: z.boolean().default(true),
     deviceId: z.string().max(300).default('default'),
@@ -93,6 +94,8 @@ export interface Status {
   message: string;
   hasKey: boolean;
   providerVerified: boolean;
+  connectionState: 'off' | 'connecting' | 'ready' | 'active' | 'limited';
+  connectionMessage: string;
   microphoneActive: boolean;
   microphones: Microphone[];
   level: number;

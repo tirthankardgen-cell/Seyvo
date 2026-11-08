@@ -21,7 +21,7 @@ Expired history entries are hidden when history is read and removed from the enc
 
 An internet connection and Google account/API key are required for dictation. Audio, vocabulary and authentication are transmitted to Google over TLS. Google controls its service logs, retention, model processing, account geography and free/paid tier data treatment. Review [Gemini terms](https://ai.google.dev/gemini-api/terms), [Google privacy](https://policies.google.com/privacy) and [pricing](https://ai.google.dev/gemini-api/docs/pricing) before use. Seyvo does not claim cloud transcription is offline, free of API charges or exclusively local.
 
-The key/model test sends the current language hints and dictionary in Google setup, just as dictation setup does; it does not capture or send microphone audio.
+The key/model test sends the current language hints and dictionary in Google setup, just as dictation setup does; it does not capture or send microphone audio. With **Keep Google ready** enabled (the default), a saved key also opens a setup-only Google connection while idle, including language hints and vocabulary. No microphone audio, silence or speech activity is sent while idle. Connections renew before provider expiry, within a local four-attempts-per-minute limit shared with key tests and dictation setup. Provider errors stop automatic retries. This guard is not Google's account-wide quota and does not ensure zero charges on a paid project. Disable the setting for connection-on-activation behavior. Pause, Windows sleep/lock, key removal and quit close the idle connection.
 
 ## Control and deletion
 

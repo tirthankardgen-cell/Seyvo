@@ -66,15 +66,20 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
       const ws = requireApp('ws');
       const server = new ws.WebSocketServer({ port: 0, host: '127.0.0.1' });
       await new Promise<void>((resolve) => server.on('listening', resolve));
+      const stats = { connections: 0, activities: 0, audio: 0 };
+      (globalThis as unknown as { standbyStats: typeof stats }).standbyStats = stats;
       server.on(
         'connection',
         (socket: {
           on: (event: string, callback: (data: Buffer) => void) => void;
           send: (data: string) => void;
         }) => {
+          stats.connections++;
           let sent = false;
           socket.on('message', (data) => {
             const message = JSON.parse(data.toString());
+            if (message.realtimeInput?.activityStart) stats.activities++;
+            if (message.realtimeInput?.audio) stats.audio++;
             if (message.setup) socket.send(JSON.stringify({ setupComplete: {} }));
             const finalFixture = (globalThis as unknown as { finalFixture?: boolean }).finalFixture;
             if (message.realtimeInput?.activityEnd && finalFixture) {
@@ -108,6 +113,31 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
     });
     expect(
       (await page.evaluate(() => window.seyvo.saveKey('synthetic-local-test-credential'))).ok,
+    ).toBe(true);
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).connectionState)
+      .toBe('ready');
+    const idleStats = await app.evaluate(
+      () =>
+        (
+          globalThis as unknown as {
+            standbyStats: { connections: number; activities: number; audio: number };
+          }
+        ).standbyStats,
+    );
+    expect(idleStats).toEqual({ connections: 2, activities: 0, audio: 0 });
+    expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
+    const recorder = app.windows().find((candidate) => candidate.url().endsWith('recorder.html'))!;
+    expect(
+      await recorder.evaluate(async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((track) => track.stop());
+          return false;
+        } catch (error) {
+          return error instanceof DOMException && error.name === 'NotAllowedError';
+        }
+      }),
     ).toBe(true);
     // Use the owned native text field: Chromium's UI Automation activation can
     // lag behind DOM focus, which is unrelated to this recovery regression.
@@ -148,6 +178,13 @@ test('new dictations replace old recovery and consecutive finalized sessions ins
       )
       .toMatch(/^recovery:/);
     const before = await page.evaluate(() => window.seyvo.status());
+    expect(
+      await app.evaluate(
+        () =>
+          (globalThis as unknown as { standbyStats: { connections: number } }).standbyStats
+            .connections,
+      ),
+    ).toBe(idleStats.connections);
     expect(before.recovery).toBe('Synthetic recovery fixture.');
     const overlay = app.windows().find((p) => p.url().includes('#overlay'))!;
     await expect(overlay.getByText('Check your text', { exact: true })).toBeVisible();

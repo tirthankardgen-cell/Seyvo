@@ -38,6 +38,21 @@ function fixture() {
 }
 afterEach(() => vi.useRealTimers());
 describe('Google wire adapter', () => {
+  it('keeps setup-only standby silent and ignores unsolicited transcripts until explicit begin', async () => {
+    const f = fixture();
+    const ready = f.connect();
+    f.socket.emit('open');
+    f.socket.message({ setupComplete: {} });
+    await ready;
+    expect(f.socket.sent).toHaveLength(1);
+    expect(() => f.provider.send(new ArrayBuffer(3200), 0)).toThrow('not ready');
+    f.socket.message({ serverContent: { inputTranscription: { text: 'Unsolicited' } } });
+    expect(f.provider.text).toBe('');
+    f.provider.begin();
+    expect(f.socket.sent[1]).toEqual({ realtimeInput: { activityStart: {} } });
+    expect(() => f.provider.begin()).toThrow('not ready');
+    f.provider.close();
+  });
   it.each([
     [401, 'rejected'],
     [403, 'rejected'],
@@ -71,6 +86,7 @@ describe('Google wire adapter', () => {
     const ready = f.connect();
     f.socket.message({ setupComplete: {} });
     await ready;
+    f.provider.begin();
     f.socket.message({
       serverContent: { inputTranscription: { text: 'Synthetic final segment' } },
     });
@@ -114,6 +130,7 @@ describe('Google wire adapter', () => {
     const ready = f.connect();
     f.socket.message({ setupComplete: {} });
     await ready;
+    f.provider.begin();
     const result = f.provider.finish();
     f.socket.message({
       serverContent: { inputTranscription: { text: 'Verified final transcript.' } },
@@ -131,6 +148,7 @@ describe('Google wire adapter', () => {
     expect(() => f.provider.send(new ArrayBuffer(3200), 0)).toThrow('not ready');
     f.socket.message({ setupComplete: {} });
     await ready;
+    f.provider.begin();
     f.provider.send(new ArrayBuffer(3200), 0);
     f.socket.message({ serverContent: { interimInputTranscription: { text: 'rough preview' } } });
     expect(f.provider.text).toBe('');
@@ -168,6 +186,7 @@ describe('Google wire adapter', () => {
     const ready = f.connect();
     f.socket.message({ setupComplete: {} });
     await ready;
+    f.provider.begin();
     f.socket.message({ serverContent: { inputTranscription: { text: 'Completed segment' } } });
     const final = f.provider.finish();
     await vi.advanceTimersByTimeAsync(10000);
@@ -179,6 +198,7 @@ describe('Google wire adapter', () => {
     const ready = f.connect();
     f.socket.message({ setupComplete: {} });
     await ready;
+    f.provider.begin();
     expect(() => f.provider.send(new ArrayBuffer(100), 3)).toThrow('lost');
     f.socket.bufferedAmount = 64001;
     expect(() => f.provider.send(new ArrayBuffer(100), 0)).toThrow('fell behind');

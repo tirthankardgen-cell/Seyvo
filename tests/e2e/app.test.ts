@@ -28,6 +28,8 @@ test('real Electron onboarding, persistence, security boundary and local microph
     expect(initial.settings.historyEnabled).toBe(false);
     expect(initial.microphoneActive).toBe(false);
     expect(initial.nativeAvailable).toBe(true);
+    // Keep this credential-replacement scenario independent of background setup.
+    await page.evaluate(() => window.seyvo.updateSettings({ keepConnectionReady: false }));
     const readyMilliseconds = Date.now() - launchedAt;
     const protectedRoundtrip = await app.evaluate(async ({ safeStorage }) => {
       const plain = 'Seyvo non-secret vault test';

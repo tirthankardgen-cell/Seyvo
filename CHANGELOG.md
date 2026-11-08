@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 — validation
+
+Prepare a silent Google connection before the shortcut so dictation can open the microphone without waiting for network setup. Keep the sandboxed recorder page loaded, with microphone permission limited to explicit activation. Stop releases tracks; each dictation gets fresh transcript state. Idle socket renewal reserves the configured recording duration within Google's session limit.
+
+Add Keep Google ready and an honest connection indicator. Share a four-connection-attempts-per-minute limit across background preparation, dictation and key tests. Do not send silence, perform extra cleanup-model calls, or automatically retry provider/quota errors. Pause, sleep, lock, key removal and quit close background connections. Google free-tier eligibility and paid-project charges remain controlled by Google.
+
 ## 0.1.7 — validation
 
 Preserve supported screenshot images and Windows clipboard privacy flags during paste. Keep portable image data and the native bitmap in a bounded 64 MiB transaction; ignore only COM owner bookkeeping, and refuse unsupported content before mutation. Temporary transcripts request exclusion from Windows clipboard history and cloud sync. Existing target, modifier, one-shot insertion and concurrent-copy checks remain in force.

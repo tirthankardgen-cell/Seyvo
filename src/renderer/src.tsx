@@ -163,7 +163,9 @@ function App() {
     : status.phase === 'listening'
       ? 'Listening'
       : status.phase === 'connecting'
-        ? 'Connecting'
+        ? status.message.startsWith('Opening microphone')
+          ? 'Starting'
+          : 'Connecting'
         : status.phase === 'finalizing'
           ? 'Finishing'
           : status.phase === 'inserting'
@@ -639,6 +641,9 @@ function App() {
                     {status.microphoneActive && <span>{time}</span>}
                   </div>
                   <p role="status">{status.message}</p>
+                  <small className="hint" data-testid="connection-status">
+                    {status.connectionMessage}
+                  </small>
                   <div className="button-row">
                     <button
                       className="primary"
@@ -743,6 +748,21 @@ function App() {
               <section>
                 <h2>Google connection</h2>
                 {keyPanel}
+                {toggle(
+                  'Keep Google ready',
+                  'Connect in the background for a faster shortcut. Microphone stays off; no idle audio is sent.',
+                  s.keepConnectionReady,
+                  (value) => void patch({ keepConnectionReady: value }),
+                  active,
+                )}
+                <p role="status" data-testid="connection-status">
+                  {status.connectionMessage}
+                </p>
+                <p className="hint">
+                  Connections are limited to four attempts per minute. Quota errors stop automatic
+                  retries. Free-tier access depends on your Google project; a paid project can incur
+                  charges. {link('Google pricing', 'pricing')}
+                </p>
               </section>
               <section>
                 <h2>Dictation</h2>

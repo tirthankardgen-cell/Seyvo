@@ -9,6 +9,7 @@ export interface SessionPorts {
   settings(): Settings;
   key(): Promise<string>;
   provider(): TranscriptionProvider;
+  providerReady?(): boolean;
   capture(): Promise<Target | undefined>;
   record(id: string, deviceId: string): Promise<void>;
   stopRecord(id: string, cancel: boolean): Promise<void>;
@@ -82,7 +83,14 @@ export class SessionCoordinator {
     this.level = 0;
     this.elapsed = 0;
     this.targetApp = '';
-    this.change('connecting', local ? 'Opening microphone locally…' : 'Connecting to Google…');
+    this.change(
+      'connecting',
+      local
+        ? 'Opening microphone locally…'
+        : this.ports.providerReady?.()
+          ? 'Opening microphone…'
+          : 'Connecting to Google…',
+    );
     try {
       if (!local) {
         current.target = await this.ports.capture();
@@ -121,6 +129,7 @@ export class SessionCoordinator {
           provider.close();
           return;
         }
+        provider.begin();
       } else this.ports.overlay();
       await this.ports.record(current.id, settings.deviceId);
       if (this.session !== current) {

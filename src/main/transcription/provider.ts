@@ -11,6 +11,7 @@ export interface TranscriptionProvider {
     interim: (text: string) => void,
     failed: (error: Error) => void,
   ): Promise<void>;
+  begin(): void;
   send(pcm: ArrayBuffer, sequence: number): void;
   finish(): Promise<FinalTranscript>;
   close(): void;

@@ -1,5 +1,17 @@
 # Implementation and evidence ledger
 
+## 0.1.8 — ready connection with bounded API usage
+
+Requested on 8 November 2026: connect to Google before the shortcut, keep the microphone off, and minimize API cost. This explicitly supersedes the original brief's no-idle-network target, but not explicit microphone activation. Both supplied engineering documents were read completely for this change.
+
+Main owns one setup-only standby socket. The shortcut captures and validates the original target, takes the ready connection, sends activityStart, then opens the microphone. Every dictation still owns a fresh assembler and closes its socket on completion/cancellation. Main prepares the next socket without audio, silence, transcription activity, or a second rewrite call. A loaded sandboxed recorder page stays permission-denied until explicit activation; real tracks and AudioContexts are released on stop. Failed recorders are destroyed.
+
+Idle sessions renew with enough time remaining for the configured maximum recording plus 30 seconds of setup/finalization margin inside Google's ten-minute limit. Default five-minute dictation permits 4.5 minutes of standby per connection; nine-minute dictation requires earlier renewal. Key tests, foreground connections and background renewal share a four-attempts-per-rolling-minute guard. Provider/network/quota errors stop automatic reconnect until explicit retry or a relevant setting/lifecycle change. Pause, lock, sleep, key removal and quit close standby. Settings show live connection state and a persistent Keep Google ready switch (default on for this requested behavior).
+
+Google's official Live Transcribe and pricing pages were checked on 8 November 2026, alongside installed SDK definitions: manual activityStart/activityEnd, ten-minute streaming sessions, free-tier input/output listed as free and paid-tier blended estimate about USD 0.009/audio minute. Project-wide active quotas vary and are shown in AI Studio. Local limits cannot guarantee free-tier eligibility, account-wide TPM/RPM, billing status or zero charges on a paid project. No billing change, model fallback or chargeable idle audio is introduced.
+
+Validation milestones: core checks and provider/standby failure tests; Electron loopback-provider tests with denied idle microphone access and connection reuse; isolated real-Google generated-speech repeats and measured shortcut latency; production packaging, installed lifecycle, checksum and hosted-download verification. Record observations in Windows QA. Remain an unsigned validation prerelease while existing stable-release gates are open.
+
 Both supplied documents were read completely on 7 November 2026. Initial repository: two briefs, commit `0e1dd78`, existing origin `tirthankardgen-cell/Seyvo`. Host: Windows 11 x64 build 26300. Initial tools: Node 20.16.0, npm 10.9.1, no .NET SDK; .NET Framework compiler is present.
 
 ## Plan and boundaries

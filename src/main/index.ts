@@ -31,6 +31,7 @@ import { NativeBridge } from './native';
 import { Shortcuts } from './shortcuts';
 import { Windows } from './windows';
 import { GeminiLive } from './transcription/gemini-live';
+import { StandbyConnection } from './transcription/standby';
 import { SessionCoordinator } from './session-coordinator';
 
 declare const __SEYVO_BUILD__: string;
@@ -75,6 +76,8 @@ async function run(): Promise<void> {
   let keyBusy = false;
   let settingsBusy = false;
   let shuttingDown = false;
+  let suspended = false;
+  let locked = false;
   let practice = false;
   let delayedAbort: AbortController | undefined;
   startupStage = 'Windows integration';
@@ -93,10 +96,21 @@ async function run(): Promise<void> {
       void quit();
     },
   );
+  const standby = new StandbyConnection(
+    () => new GeminiLive(),
+    () => storage.key(),
+    () => publish(),
+  );
+  const refreshConnection = () =>
+    standby.configure(
+      storage.settings,
+      hasKey && !keyBusy && !shuttingDown && !suspended && !locked,
+    );
   const coordinator = new SessionCoordinator({
     settings: () => storage.settings,
     key: () => storage.key(),
-    provider: () => new GeminiLive(),
+    provider: () => standby.provider(),
+    providerReady: () => standby.ready,
     capture: () => (native.available ? native.capture(practice) : Promise.resolve(undefined)),
     record: (id, deviceId) => windows.record(id, deviceId),
     stopRecord: (id, cancel) => windows.stopRecord(id, cancel),
@@ -152,6 +166,8 @@ async function run(): Promise<void> {
       message: coordinator.message,
       hasKey,
       providerVerified,
+      connectionState: standby.state,
+      connectionMessage: standby.message,
       microphoneActive: coordinator.microphoneActive,
       microphones,
       level: coordinator.level,
@@ -269,6 +285,7 @@ async function run(): Promise<void> {
     const previous = storage.settings;
     try {
       if (patch.paused) {
+        standby.stop();
         delayedAbort?.abort();
         await coordinator.cancel();
       }
@@ -285,6 +302,7 @@ async function run(): Promise<void> {
       if (storage.warning) coordinator.message = storage.warning;
       if (!next.showOverlay) windows.hideOverlay();
       else windows.refreshOverlay();
+      refreshConnection();
       publish();
       return next;
     } finally {
@@ -292,13 +310,16 @@ async function run(): Promise<void> {
     }
   }
   async function testKey(candidate?: string): Promise<void> {
-    if (coordinator.busy || keyBusy)
+    if (coordinator.busy || keyBusy || settingsBusy || shuttingDown)
       throw new AppError('Finish the current operation before testing a key.');
     keyBusy = true;
+    standby.stop();
     const provider = new GeminiLive();
     const abort = new AbortController();
+    let accepted = false;
     try {
       const key = candidate ?? (await storage.key());
+      standby.budget.take();
       await provider.connect(
         key,
         storage.settings,
@@ -317,6 +338,7 @@ async function run(): Promise<void> {
       }
       hasKey = true;
       providerVerified = true;
+      accepted = true;
       coordinator.message = 'Gemini Live Transcribe is available to your key.';
     } catch (error) {
       if (!candidate) providerVerified = false;
@@ -324,11 +346,14 @@ async function run(): Promise<void> {
     } finally {
       provider.close();
       keyBusy = false;
+      if (accepted) refreshConnection();
       publish();
     }
   }
   async function act(action: string): Promise<void> {
     if (action === 'start') {
+      if (suspended || locked || shuttingDown)
+        throw new AppError('Resume and unlock Windows before dictating.');
       if (keyBusy || settingsBusy) throw new AppError('Wait for settings to finish.');
       if (!hasKey) throw new AppError('Save and test your Gemini API key in Settings first.');
       await coordinator.start();
@@ -423,11 +448,18 @@ async function run(): Promise<void> {
   });
   handle('app:key-test', () => testKey());
   handle('app:key-remove', async () => {
-    if (keyBusy || coordinator.busy) throw new AppError('Finish the current operation first.');
-    await storage.removeKey();
-    hasKey = false;
-    providerVerified = false;
-    publish();
+    if (keyBusy || settingsBusy || coordinator.busy)
+      throw new AppError('Finish the current operation first.');
+    keyBusy = true;
+    standby.stop();
+    try {
+      await storage.removeKey();
+      hasKey = false;
+      providerVerified = false;
+    } finally {
+      keyBusy = false;
+      publish();
+    }
   });
   let delayedAction = false;
   handle('app:action', async (input) => {
@@ -609,8 +641,9 @@ async function run(): Promise<void> {
         }
         return;
       }
+      const currentRecording = windows.isRecordingSession(payload.id);
       windows.recorderEvent(payload);
-      if (payload.kind === 'error')
+      if (payload.kind === 'error' && currentRecording)
         void coordinator.fail(new AppError(payload.error ?? 'Microphone unavailable.'));
     } catch {
       /* Reject malformed recorder messages without exposing content. */
@@ -619,6 +652,7 @@ async function run(): Promise<void> {
   async function quit(): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
+    standby.stop();
     delayedAbort?.abort();
     await coordinator.shutdown().catch(() => {});
     windows.close();
@@ -638,12 +672,24 @@ async function run(): Promise<void> {
   });
   app.on('window-all-closed', () => {});
   powerMonitor.on('suspend', () => {
+    suspended = true;
+    standby.stop();
     delayedAbort?.abort();
     void coordinator.cancel().catch(report);
   });
   powerMonitor.on('lock-screen', () => {
+    locked = true;
+    standby.stop();
     delayedAbort?.abort();
     void coordinator.cancel().catch(report);
+  });
+  powerMonitor.on('resume', () => {
+    suspended = false;
+    refreshConnection();
+  });
+  powerMonitor.on('unlock-screen', () => {
+    locked = false;
+    refreshConnection();
   });
   nativeTheme.themeSource = storage.settings.theme;
   startupStage = 'Windows startup settings';
@@ -655,5 +701,9 @@ async function run(): Promise<void> {
     (!storage.settings.startMinimized && !process.argv.includes('--startup'))
   )
     await windows.showDashboard();
-  if (!shuttingDown) publish();
+  if (!shuttingDown) {
+    refreshConnection();
+    void windows.prepareRecorder().catch(() => {});
+    publish();
+  }
 }

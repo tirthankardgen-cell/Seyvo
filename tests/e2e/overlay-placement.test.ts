@@ -52,7 +52,7 @@ test('custom placement persists, caret preview falls back safely, and preview ne
     expect(custom.bounds.x + custom.bounds.width).toBe(custom.area.x + custom.area.width - 20);
     expect(custom.bounds.y).toBe(custom.area.y + 20);
     expect(custom.focusable).toBe(false);
-    expect(custom.recorder).toBe(false);
+    expect(custom.recorder).toBe(true); // Preloaded page, without microphone permission.
     expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(false);
     const overlayPage = app.windows().find((candidate) => candidate.url().includes('#overlay'))!;
     for (const theme of ['light', 'dark', 'system'] as const) {

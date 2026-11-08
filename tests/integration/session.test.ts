@@ -7,6 +7,7 @@ function fixture() {
   const provider = {
     text: '',
     connect: vi.fn().mockResolvedValue(undefined),
+    begin: vi.fn(),
     send: vi.fn(),
     finish: vi
       .fn()

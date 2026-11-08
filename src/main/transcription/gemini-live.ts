@@ -13,6 +13,7 @@ export class GeminiLive implements TranscriptionProvider {
   private socket?: WebSocket;
   private assembler = new TranscriptAssembler();
   private ready = false;
+  private active = false;
   private closing = false;
   private finishing = false;
   private sequence = -1;
@@ -100,20 +101,17 @@ export class GeminiLive implements TranscriptionProvider {
             return;
           }
           if (message.setupComplete && !this.ready) {
-            // Each explicit dictation is one activity. Manual boundaries ensure
-            // stop receives a terminal response even after a long spoken pause.
-            socket.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
             this.ready = true;
             clearTimeout(timeout);
             resolve();
           }
           const content = message.serverContent;
-          if (content?.interimInputTranscription?.text) {
+          if (this.active && content?.interimInputTranscription?.text) {
             this.assembler.interim = content.interimInputTranscription.text.slice(0, 10000);
             interim(this.assembler.interim);
             this.lastEvent = Date.now();
           }
-          if (content?.inputTranscription) {
+          if (this.active && content?.inputTranscription) {
             this.assembler.final(content.inputTranscription, this.sequence);
             interim('');
             this.lastEvent = Date.now();
@@ -143,8 +141,15 @@ export class GeminiLive implements TranscriptionProvider {
       });
     });
   }
+  begin(): void {
+    if (!this.ready || this.closing || this.active || !this.socket)
+      throw new AppError('Transcription is not ready for audio.');
+    // Setup can happen while idle. Only explicit activation starts an activity.
+    this.socket.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+    this.active = true;
+  }
   send(pcm: ArrayBuffer, sequence: number): void {
-    if (!this.ready || this.closing || this.finishing || !this.socket)
+    if (!this.ready || !this.active || this.closing || this.finishing || !this.socket)
       throw new AppError('Transcription is not ready for audio.');
     if (sequence !== this.sequence + 1)
       throw new AppError('An audio packet was lost. Completed text has been preserved.');
@@ -160,7 +165,7 @@ export class GeminiLive implements TranscriptionProvider {
     );
   }
   finish(): Promise<FinalTranscript> {
-    if (this.finishing || this.closing || !this.ready)
+    if (this.finishing || this.closing || !this.ready || !this.active)
       return Promise.resolve({ text: this.text, complete: false });
     this.finishing = true;
     this.stopAt = Date.now();

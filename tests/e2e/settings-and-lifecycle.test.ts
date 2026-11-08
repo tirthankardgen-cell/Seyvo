@@ -162,7 +162,7 @@ test('recorder crash, suspend and screen lock release capture; close hides to tr
             ),
           ),
         )
-        .toBe(false);
+        .toBe(event !== 'crash'); // Healthy recorder page remains loaded, microphone off.
     }
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()
