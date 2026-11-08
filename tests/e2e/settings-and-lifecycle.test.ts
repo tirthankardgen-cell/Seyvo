@@ -81,6 +81,19 @@ for (const scale of [1, 1.25, 1.5, 2]) {
         .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
         .toBe(true);
       const overlay = app.windows().find((p) => p.url().includes('#overlay'))!;
+      // Recorder startup can now finish before the overlay's first load. Wait
+      // for its subscription and pending show/publish before a static fixture.
+      await overlay.waitForLoadState('load');
+      await expect(overlay.locator('.bubble')).toBeVisible();
+      await expect
+        .poll(() =>
+          app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()
+              .find((w) => w.webContents.getURL().includes('#overlay'))!
+              .isVisible(),
+          ),
+        )
+        .toBe(true);
       await page.evaluate(() => window.seyvo.action('micStop'));
       // Only display data is synthetic; no production path invents transcripts.
       // Stop live level broadcasts before injecting the static caption fixture.
