@@ -72,6 +72,8 @@ async function run(): Promise<void> {
     decrypt: async (data) => (await safeStorage.decryptStringAsync(data)).result,
   });
   await storage.initialize();
+  let fnBinding = await storage.fnBinding();
+  let fnChecking = false;
   let hasKey = await storage.hasKey();
   let providerVerified = false;
   let microphones: Microphone[] = [];
@@ -91,8 +93,8 @@ async function run(): Promise<void> {
   await native.start().catch(() => {});
   const windows = new Windows(
     () => storage.settings,
-    () => {
-      void coordinator.fail(new AppError('The recorder stopped unexpectedly. Microphone is off.'));
+    (error) => {
+      void coordinator.fail(error);
     },
     () => {
       void quit();
@@ -133,15 +135,14 @@ async function run(): Promise<void> {
     cue: (kind) => {
       void native.cue(kind).catch(() => {});
     },
-    overlay: (target) => {
-      void windows.showOverlay(target).then(publish);
-    },
+    overlay: (target) => windows.showOverlay(target).then(publish),
   });
   const shortcuts = new Shortcuts(globalShortcut, () => {
     delayedAbort?.abort();
     void act(coordinator.phase === 'listening' ? 'stop' : 'start').catch(reportActivationError);
   });
   let singleKeyRegistered = false;
+  let shortcutPending = false;
   let bindingGeneration = 0;
   const singleKey = new SingleKeyShortcut({
     phase: () => coordinator.phase,
@@ -154,18 +155,33 @@ async function run(): Promise<void> {
     error: (error) => {
       void reportActivationError(error);
     },
+    pending: (pending) => {
+      if (shortcutPending === pending) return;
+      shortcutPending = pending;
+      if (pending) void windows.showOverlay().then(publish).catch(report);
+      else if (!coordinator.busy) windows.hideOverlay();
+      publish();
+    },
   });
   native.onShortcut = (edge) => singleKey.edge(edge);
   async function bindShortcuts(settings: Settings): Promise<void> {
     const generation = ++bindingGeneration;
     const enabled =
-      settings.activation === 'single-key' && !settings.paused && !suspended && !locked;
+      settings.activation === 'single-key' &&
+      !settings.paused &&
+      !suspended &&
+      !locked &&
+      !fnChecking;
     if (enabled) {
-      await native.watchShortcut(true);
+      if (settings.singleKey === 'fn' && !fnBinding)
+        throw new AppError(
+          'Check Fn support in Settings first. Your current shortcut has not changed.',
+        );
+      await native.watchShortcut(true, settings.singleKey === 'fn' ? fnBinding : undefined);
       shortcuts.set(settings.shortcut, true);
     } else {
       // Reserve the replacement before retiring a working listener.
-      shortcuts.set(settings.shortcut, settings.paused || suspended || locked);
+      shortcuts.set(settings.shortcut, settings.paused || suspended || locked || fnChecking);
       // Also retire an enable request still in flight when Windows locks or
       // suspends; registration status may not have been published yet.
       if (native.available) await native.watchShortcut(false);
@@ -202,6 +218,8 @@ async function run(): Promise<void> {
   }
   function status(): Status {
     return {
+      fnAvailable: Boolean(fnBinding),
+      fnChecking,
       phase: coordinator.phase,
       message: coordinator.message,
       hasKey,
@@ -217,6 +235,7 @@ async function run(): Promise<void> {
       targetApp: coordinator.targetApp,
       shortcutRegistered: Boolean(shortcuts.current) || singleKeyRegistered,
       singleKeyRegistered,
+      shortcutPending,
       nativeAvailable: native.available,
       startup: startupEnabled(),
       startupAvailable: app.isPackaged,
@@ -228,7 +247,7 @@ async function run(): Promise<void> {
   function publish(): void {
     const snapshot = status();
     windows.broadcast(snapshot);
-    const trayState = `${snapshot.phase}|${snapshot.settings.paused}|${snapshot.microphoneActive}|${snapshot.hasKey}`;
+    const trayState = `${snapshot.phase}|${snapshot.settings.paused}|${snapshot.microphoneActive}|${snapshot.hasKey}|${shortcutPending}`;
     if (trayState !== lastTrayState) {
       lastTrayState = trayState;
       tray.setToolTip(
@@ -288,7 +307,11 @@ async function run(): Promise<void> {
       if (overlayTimer) clearTimeout(overlayTimer);
       // Terminal status is brief; recovery stays available in the dashboard.
       // Never leave a click-through bubble over the user's destination forever.
-      if (!coordinator.busy && ['idle', 'error', 'recovery'].includes(snapshot.phase))
+      if (
+        !shortcutPending &&
+        !coordinator.busy &&
+        ['idle', 'error', 'recovery'].includes(snapshot.phase)
+      )
         overlayTimer = setTimeout(
           () => windows.hideOverlay(),
           snapshot.phase !== 'idle' || snapshot.message.startsWith('No finalized speech')
@@ -320,7 +343,8 @@ async function run(): Promise<void> {
     }
   }
   async function updateSettings(input: unknown) {
-    if (settingsBusy || keyBusy) throw new AppError('Another settings operation is in progress.');
+    if (settingsBusy || keyBusy || fnChecking)
+      throw new AppError('Another settings operation is in progress.');
     const patch = settingsPatchSchema.parse(input);
     if (coordinator.busy && !('paused' in patch))
       throw new AppError('Finish recording before changing settings.');
@@ -338,6 +362,7 @@ async function run(): Promise<void> {
         'shortcut' in patch ||
         'paused' in patch ||
         'activation' in patch ||
+        'singleKey' in patch ||
         'singleKeyMode' in patch;
       if (rebind) await bindShortcuts(next);
       try {
@@ -399,10 +424,12 @@ async function run(): Promise<void> {
     }
   }
   async function act(action: string): Promise<void> {
+    if (fnChecking && !['quit', 'cancel'].includes(action))
+      throw new AppError('Finish the Fn compatibility check first. Microphone is off.');
     if (action === 'start') {
       if (suspended || locked || shuttingDown)
         throw new AppError('Resume and unlock Windows before dictating.');
-      if (keyBusy || settingsBusy) throw new AppError('Wait for settings to finish.');
+      if (keyBusy || settingsBusy || fnChecking) throw new AppError('Wait for settings to finish.');
       if (!hasKey) throw new AppError('Save and test your Gemini API key in Settings first.');
       await coordinator.start();
     } else if (action === 'stop' || action === 'micStop') await coordinator.stop();
@@ -416,6 +443,7 @@ async function run(): Promise<void> {
       }
     } else if (action === 'cancel') {
       singleKey.reset();
+      if (fnChecking) await native.watchShortcut(false);
       delayedAbort?.abort();
       await coordinator.cancel();
     } else if (action === 'copy') coordinator.copy();
@@ -430,6 +458,35 @@ async function run(): Promise<void> {
       await windows.showOverlay();
       publish();
       if (available()) overlayTimer = setTimeout(() => windows.hideOverlay(), 3000);
+    } else if (action === 'testFn') {
+      if (
+        keyBusy ||
+        settingsBusy ||
+        fnChecking ||
+        coordinator.busy ||
+        shuttingDown ||
+        suspended ||
+        locked
+      )
+        throw new AppError('Finish the current operation before checking Fn.');
+      fnChecking = true;
+      try {
+        await bindShortcuts(storage.settings);
+        publish();
+        const detected = await native.probeFn();
+        if (shuttingDown || suspended || locked)
+          throw new AppError('Fn check cancelled. Please try again.');
+        if (!detected)
+          throw new AppError(
+            'No usable Fn press and release were detected. This keyboard may keep Fn inside its firmware. Your previous shortcut is still selected.',
+          );
+        await storage.saveFnBinding(detected);
+        fnBinding = detected;
+      } finally {
+        fnChecking = false;
+        if (!shuttingDown) await bindShortcuts(storage.settings).catch(report);
+        publish();
+      }
     } else if (action === 'testSound') {
       if (!storage.settings.soundCues || coordinator.busy)
         throw new AppError('Enable sound cues and finish recording before previewing.');
@@ -526,6 +583,7 @@ async function run(): Promise<void> {
         'micTest',
         'micStop',
         'testSound',
+        'testFn',
         'previewOverlay',
         'diagnostics',
         'pasteTest',

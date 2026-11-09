@@ -1,5 +1,11 @@
 # Implementation and evidence ledger
 
+## 0.1.11 — visible hold feedback and release recovery
+
+Read both product/engineering briefs completely for this repair. Show a microphone-off bubble during the existing three-second single-key gesture; require bubble loading before microphone activation, restore a hidden active overlay without focus changes, and stop recording if its renderer crashes. Native key-state polling may recover only a missed release; it cannot synthesize activation. Keep timing/session authority in main, fixed native events, safe targeting, and existing privacy boundaries. Add regressions for lost key-up, hidden/crashed overlays, early release and repeated holds; run core, Electron, installed/provider and packaging checks. Investigate Fn on the HP Pavilion; do not claim bare Fn is detectable without observed Windows events. Publish only an unsigned validation prerelease while stable gates remain open.
+
+The user clarified that Fn must remain selectable for other keyboards even if their HP does not expose it. Add a bounded, cancellable, microphone-free Fn compatibility check. Require two physical press/release pairs and sampled held state; accept only non-typing F13–F24/OEM event mappings, never arbitrary letters/modifiers. Persist the validated mapping separately in main-owned `fn-key.json`; renderers receive only availability/checking flags. Calibrated Fn uses the same three-second gesture and release recovery. This supports exposed Windows keyboard events, not arbitrary vendor HID protocols or firmware-only Fn. Saved-mapping/SendInput tests do not prove physical Fn compatibility.
+
 ## 0.1.8 — ready connection with bounded API usage
 
 Requested on 8 November 2026: connect to Google before the shortcut, keep the microphone off, and minimize API cost. This explicitly supersedes the original brief's no-idle-network target, but not explicit microphone activation. Both supplied engineering documents were read completely for this change.

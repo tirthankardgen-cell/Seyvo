@@ -213,11 +213,18 @@ class TestHost {
             INPUT key=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0xA3, Flags=(uint)(up?3:1) } };
             Console.WriteLine(SendInput(1,new INPUT[] {key},Marshal.SizeOf(typeof(INPUT)))==1 ? "key-sent" : "input-blocked");
           }
+          else if(command=="fn-fixture-down" || command=="fn-fixture-up") {
+            bool up=command=="fn-fixture-up";
+            if(!up && GetForegroundWindow()!=form.Handle) { Console.WriteLine("focus-blocked"); return; }
+            INPUT key=new INPUT { Type=1,Key=new KEYBDINPUT { Vk=0x7C,Scan=0x64,Flags=(uint)(up?2:0) } };
+            Console.WriteLine(SendInput(1,new INPUT[] {key},Marshal.SizeOf(typeof(INPUT)))==1?"key-sent":"input-blocked");
+          }
           else if(command=="readonly") { box.ReadOnly=true; Console.WriteLine("readonly"); }
           else if(command=="button") { box.ReadOnly=false; button.BringToFront(); form.ActiveControl=button; button.Focus(); Console.WriteLine(button.Focused ? "button-focused" : "button-focus-blocked-"+button.CanFocus+"-"+button.Visible+"-"+button.Enabled); }
           else if(command=="quit") {
             INPUT release=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0xA3, Flags=3 } };
-            SendInput(1,new INPUT[] {release},Marshal.SizeOf(typeof(INPUT)));
+            INPUT fnRelease=new INPUT { Type=1, Key=new KEYBDINPUT { Vk=0x7C,Scan=0x64,Flags=2 } };
+            SendInput(2,new INPUT[] {release,fnRelease},Marshal.SizeOf(typeof(INPUT)));
             form.Close();
           }
         }));

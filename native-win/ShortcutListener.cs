@@ -16,13 +16,17 @@ internal sealed class ShortcutListener : IDisposable {
   [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string module);
   readonly Thread thread;
   readonly Action<string> emit;
+  readonly int assignedKey;
+  readonly FnBinding fn;
   readonly ManualResetEvent ready = new ManualResetEvent(false);
   Control dispatcher;
   IntPtr handle;
   Hook callback;
   bool held, interrupted;
   volatile bool disposed;
-  public ShortcutListener(Action<string> emit) {
+  public ShortcutListener(Action<string> emit, FnBinding fn = null) {
+    this.fn=fn;
+    assignedKey=fn==null?0xA3:fn.Vk;
     this.emit=emit;
     thread=new Thread(Run) { IsBackground=true, Name="Seyvo assigned shortcut" };
     thread.SetApartmentState(ApartmentState.STA);
@@ -37,13 +41,22 @@ internal sealed class ShortcutListener : IDisposable {
       dispatcher=control;
       IntPtr window=control.Handle;
       // Reconfiguration/resume must require a fresh press, not a held key.
-      held=GetAsyncKeyState(0xA3)<0; interrupted=held;
+      held=GetAsyncKeyState(assignedKey)<0; interrupted=held;
       callback=OnKey;
       handle=SetWindowsHookEx(13,callback,GetModuleHandle(null),0);
       ready.Set();
       if(handle==IntPtr.Zero)return;
-      try { if(!disposed)Application.Run(); }
-      finally { UnhookWindowsHookEx(handle); handle=IntPtr.Zero; }
+      // Another hook or a desktop transition can lose the key-up callback.
+      // Poll only the assigned key, on this same message-loop thread. A poll
+      // may release a gesture, but must never invent a new activation.
+      using(var releaseCheck=new System.Windows.Forms.Timer { Interval=25 }) {
+        releaseCheck.Tick+=(sender,args)=> {
+          if(held && GetAsyncKeyState(assignedKey)>=0) { held=false; Notify("up"); }
+        };
+        releaseCheck.Start();
+        try { if(!disposed)Application.Run(); }
+        finally { releaseCheck.Stop(); UnhookWindowsHookEx(handle); handle=IntPtr.Zero; }
+      }
     }
   }
   void Notify(string state) {
@@ -55,11 +68,11 @@ internal sealed class ShortcutListener : IDisposable {
       var key=(KEY)Marshal.PtrToStructure(data,typeof(KEY));
       bool down=message.ToInt64()==0x100 || message.ToInt64()==0x104;
       bool up=message.ToInt64()==0x101 || message.ToInt64()==0x105;
-      if(key.Vk==0xA3) {
+      if(key.Vk==assignedKey && (fn==null || (key.Scan==fn.Scan && ((key.Flags&1)!=0)==fn.Extended))) {
         if(down && !held) {
           held=true; interrupted=false;
-          foreach(int modifier in new int[] {0xA0,0xA1,0xA2,0xA4,0xA5,0x5B,0x5C})
-            if(GetAsyncKeyState(modifier)<0)interrupted=true;
+          foreach(int modifier in new int[] {0xA0,0xA1,0xA2,0xA3,0xA4,0xA5,0x5B,0x5C})
+            if(modifier!=assignedKey && GetAsyncKeyState(modifier)<0)interrupted=true;
           if(!interrupted)Notify("down");
         } else if(up && held) { held=false; Notify("up"); }
       } else if(down && held && !interrupted) {

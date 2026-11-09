@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11 — validation
+
+Show a microphone-off bubble as soon as a single-key hold starts, then Listening after activation. Restore hidden active bubbles without stealing focus; stop safely if their renderer crashes. Check the held key's Windows state so a lost release callback cannot leave hold dictation running. Keep short presses, setup cancellation and stale activation failures safe.
+
+Keep Fn selectable with a 12-second, cancellable hardware compatibility check. Two physical hold/release pairs enable a supported non-typing Fn mapping, which uses the same gesture as Right Ctrl and persists across restart. Firmware-only Fn and unsupported vendor event protocols remain unavailable; no universal hardware support is claimed.
+
 ## 0.1.10 — validation
 
 Keep the saved key combination as the default and add optional Right Ctrl activation. Hold for three seconds to start: either keep holding while speaking and release to finish, or release and speak, then tap/release again to finish. Ignore autorepeat and short accidental presses, disarm ordinary Ctrl combinations, and cancel pending setup when hold mode releases. Native listener failure disables single-key activation and restores the saved combination when available. Fn is shown as unavailable because it has no standard Windows virtual-key event; no firmware/driver workaround is bundled.

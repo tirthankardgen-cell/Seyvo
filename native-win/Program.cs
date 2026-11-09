@@ -52,6 +52,11 @@ internal static class Program {
   static readonly Dictionary<string, Target> Targets = new Dictionary<string, Target>();
   static IntPtr clipboardOwner;
   static ShortcutListener shortcut;
+  static CancellationTokenSource fnProbe;
+  static readonly object FnGate=new object();
+  static void CancelFnProbe() {
+    lock(FnGate) { if(fnProbe!=null)fnProbe.Cancel(); fnProbe=null; }
+  }
   sealed class Target {
     public IntPtr Window, Focus;
     public uint Pid, Thread;
@@ -347,12 +352,27 @@ internal static class Program {
           string command=Convert.ToString(request["command"]); object result;
           if (command=="ping") result=new { version=1, architecture="x64" };
           else if (command=="watchShortcut") {
+            CancelFnProbe();
             if(shortcut!=null) { shortcut.Dispose(); shortcut=null; }
             int generation=Convert.ToInt32(request["generation"]);
             if(generation<1)throw new InvalidOperationException("shortcut-unavailable");
             if(Convert.ToBoolean(request["enabled"]))
-              shortcut=new ShortcutListener(state=>Console.WriteLine("{\"event\":\"shortcut\",\"generation\":"+generation+",\"state\":\""+state+"\"}"));
+              shortcut=new ShortcutListener(state=>Console.WriteLine("{\"event\":\"shortcut\",\"generation\":"+generation+",\"state\":\""+state+"\"}"), request.ContainsKey("fn")?FnBinding.Parse(request["fn"]):null);
             result=new { watching=shortcut!=null };
+          }
+          else if(command=="probeFn") {
+            CancelFnProbe();
+            var probe=new CancellationTokenSource();
+            lock(FnGate)fnProbe=probe;
+            int replyId=id;
+            System.Threading.Tasks.Task.Run(()=> {
+              FnBinding binding=null;
+              try { binding=FnProbe.Check(probe.Token); } catch { }
+              lock(FnGate) { if(Object.ReferenceEquals(fnProbe,probe))fnProbe=null; probe.Dispose(); }
+              string value=binding==null?"null":"{\"vk\":"+binding.Vk+",\"scan\":"+binding.Scan+",\"extended\":"+(binding.Extended?"true":"false")+"}";
+              Console.WriteLine("{\"id\":"+replyId+",\"ok\":true,\"result\":"+value+"}");
+            });
+            continue;
           }
           else if (command=="cue") { CuePlayer.Play(Convert.ToString(request["cue"])); result=new { played=true }; }
           else if (command=="capture") result=Capture(Convert.ToInt32(request["ownPid"]),request.ContainsKey("allowPractice") && Convert.ToBoolean(request["allowPractice"]));
@@ -367,6 +387,7 @@ internal static class Program {
         }
       }
       ClearTargets();
+      CancelFnProbe();
       if(shortcut!=null)shortcut.Dispose();
       CuePlayer.Close();
     }

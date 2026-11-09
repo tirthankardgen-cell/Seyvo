@@ -31,6 +31,7 @@ export const settingsSchema = z
     onboardingComplete: z.boolean().default(false),
     shortcut: shortcutSchema.default('Control+Shift+Space'),
     activation: z.enum(['shortcut', 'single-key']).default('shortcut'),
+    singleKey: z.enum(['right-control', 'fn']).default('right-control'),
     singleKeyMode: z.enum(['hold', 'toggle']).default('hold'),
     paused: z.boolean().default(false),
     keepConnectionReady: z.boolean().default(true),
@@ -92,6 +93,9 @@ export interface Microphone {
   label: string;
 }
 export interface Status {
+  fnAvailable: boolean;
+  fnChecking: boolean;
+  shortcutPending: boolean;
   phase: Phase;
   message: string;
   hasKey: boolean;
@@ -142,6 +146,7 @@ export interface Bridge {
       | 'micTest'
       | 'micStop'
       | 'testSound'
+      | 'testFn'
       | 'previewOverlay'
       | 'diagnostics'
       | 'pasteTest',

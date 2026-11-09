@@ -123,6 +123,13 @@ function App() {
   async function patch(patch: SettingsPatch) {
     await run(window.seyvo.updateSettings(patch));
   }
+  async function chooseSingleKey(singleKey: Settings['singleKey']) {
+    if (singleKey === 'fn' && !status?.fnAvailable) {
+      await run(window.seyvo.action('testFn'));
+      if (!(await window.seyvo.status()).fnAvailable) return;
+    }
+    await patch({ singleKey });
+  }
   async function saveShortcut(candidate: string) {
     setShortcutMessage('');
     const saved = await run(window.seyvo.updateSettings({ shortcut: candidate }));
@@ -157,14 +164,15 @@ function App() {
     );
   const s = status.settings;
   const singleKeySelected = s.activation === 'single-key';
+  const singleKeyLabel = s.singleKey === 'fn' ? 'Fn' : 'Right Ctrl';
   const activeShortcut =
     status.singleKeyRegistered || (singleKeySelected && s.paused)
-      ? 'Right Ctrl'
+      ? singleKeyLabel
       : s.shortcut.replaceAll('Control', 'Ctrl');
   const gestureHelp = status.singleKeyRegistered
     ? s.singleKeyMode === 'hold'
-      ? 'Hold Right Ctrl for 3 seconds, speak while holding, then release to finish.'
-      : 'Hold Right Ctrl for 3 seconds, release and speak, then tap Right Ctrl to finish.'
+      ? `Hold ${singleKeyLabel} for 3 seconds, speak while holding, then release to finish.`
+      : `Hold ${singleKeyLabel} for 3 seconds, release and speak, then tap it to finish.`
     : 'Press your shortcut once to start, then again to finish.';
   const devices = status.microphones;
   const active = ['connecting', 'listening', 'finalizing', 'inserting'].includes(status.phase);
@@ -196,29 +204,33 @@ function App() {
           <Wave level={status.level} reduced={s.reducedMotion} dots={s.waveform === 'dots'} />
           <div>
             <strong>
-              {active
-                ? title
-                : status.phase === 'recovery'
-                  ? 'Check your text'
-                  : status.phase === 'error'
-                    ? 'Needs attention'
-                    : status.message.startsWith('Text sent to the original field.')
-                      ? 'Text sent'
-                      : status.message.startsWith('No finalized speech')
-                        ? 'No speech received'
-                        : status.message.startsWith('Microphone test finished')
-                          ? 'Mic test finished'
-                          : 'Mic off'}
+              {status.shortcutPending
+                ? 'Hold to start'
+                : active
+                  ? title
+                  : status.phase === 'recovery'
+                    ? 'Check your text'
+                    : status.phase === 'error'
+                      ? 'Needs attention'
+                      : status.message.startsWith('Text sent to the original field.')
+                        ? 'Text sent'
+                        : status.message.startsWith('No finalized speech')
+                          ? 'No speech received'
+                          : status.message.startsWith('Microphone test finished')
+                            ? 'Mic test finished'
+                            : 'Mic off'}
             </strong>
             <small>
-              {status.microphoneActive
-                ? time
-                : ['error', 'recovery'].includes(status.phase) ||
-                    status.message.startsWith('No finalized speech')
-                  ? 'Open Seyvo'
-                  : status.message.startsWith('Microphone test finished')
-                    ? 'No audio uploaded'
-                    : 'Seyvo'}
+              {status.shortcutPending
+                ? '3-second hold · Mic off'
+                : status.microphoneActive
+                  ? time
+                  : ['error', 'recovery'].includes(status.phase) ||
+                      status.message.startsWith('No finalized speech')
+                    ? 'Open Seyvo'
+                    : status.message.startsWith('Microphone test finished')
+                      ? 'No audio uploaded'
+                      : 'Seyvo'}
             </small>
           </div>
           {s.captions && status.interim && <p className="caption">{status.interim}</p>}
@@ -405,11 +417,14 @@ function App() {
       {singleKeySelected && (
         <>
           <label htmlFor="single-key">Single key</label>
-          <select id="single-key" defaultValue="right-control" disabled={busy || active}>
+          <select
+            id="single-key"
+            value={s.singleKey}
+            disabled={busy || active}
+            onChange={(e) => void chooseSingleKey(e.target.value as Settings['singleKey'])}
+          >
             <option value="right-control">Right Ctrl</option>
-            <option value="fn" disabled>
-              Fn · unavailable through standard Windows keyboard events
-            </option>
+            <option value="fn">Fn{status.fnAvailable ? '' : ' · check keyboard support'}</option>
           </select>
           <label htmlFor="single-key-mode">Single-key behavior</label>
           <select
@@ -424,10 +439,10 @@ function App() {
             <option value="toggle">Hold to start · tap to finish</option>
           </select>
           <p className="hint">
-            Hold Right Ctrl alone for 3 seconds to start. Wait for Listening before speaking.
+            Hold {singleKeyLabel} alone for 3 seconds to start. Wait for Listening before speaking.
             {s.singleKeyMode === 'hold'
               ? ' Keep holding as you speak; releasing finishes.'
-              : ' Release and speak; tap and release Right Ctrl again to finish.'}{' '}
+              : ' Release and speak; tap and release the same key again to finish.'}{' '}
             Short presses do not start the microphone. Normal Ctrl combinations still work.
           </p>
           {!status.singleKeyRegistered && !s.paused && (
@@ -441,9 +456,23 @@ function App() {
         </>
       )}
       <p className="hint">
-        Fn is usually handled by the keyboard itself and is unavailable to Windows apps. Use Right
-        Ctrl for single-key activation.
+        Fn works only on keyboards that expose a usable Fn event to Windows. Select Fn to check this
+        keyboard. Keys handled only inside keyboard firmware cannot be detected by Seyvo.
       </p>
+      {status.fnChecking && (
+        <div>
+          <p role="status">
+            Checking Fn: press and hold Fn alone for one second, release, then repeat once. You have
+            12 seconds. Microphone off.
+          </p>
+          <button onClick={() => void window.seyvo.action('cancel')}>Cancel Fn check</button>
+        </div>
+      )}
+      {singleKeySelected && status.fnAvailable && (
+        <button disabled={busy || active} onClick={() => void run(window.seyvo.action('testFn'))}>
+          Check Fn again
+        </button>
+      )}
       {!singleKeySelected && (
         <>
           <label htmlFor="shortcut">Dictation shortcut</label>

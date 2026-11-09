@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { settingsSchema, type Settings, type HistoryEntry } from '../shared/contracts';
 import { AppError } from '../shared/errors';
+import { fnBindingSchema, type FnBinding } from './fn-key';
 
 export interface Cipher {
   encrypt(text: string): Promise<Buffer>;
@@ -83,6 +84,21 @@ async function removeStored(path: string): Promise<void> {
   await fs.rm(`${path}.pending`, { force: true });
 }
 export class Storage {
+  async fnBinding(): Promise<FnBinding | undefined> {
+    try {
+      const bytes = await readOptional(join(this.directory, 'fn-key.json'));
+      if (!bytes || bytes.length > 1024) return undefined;
+      return fnBindingSchema.parse(JSON.parse(bytes.toString()));
+    } catch {
+      return undefined;
+    }
+  }
+  async saveFnBinding(binding: FnBinding): Promise<void> {
+    await atomicWrite(
+      join(this.directory, 'fn-key.json'),
+      JSON.stringify(fnBindingSchema.parse(binding)),
+    );
+  }
   settings = settingsSchema.parse({});
   warning = '';
   private writes = Promise.resolve();

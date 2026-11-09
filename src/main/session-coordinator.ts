@@ -17,7 +17,7 @@ export interface SessionPorts {
   copy(text: string): void;
   saveHistory(text: string, app: string): Promise<void>;
   changed(): void;
-  overlay(target?: Target): void;
+  overlay(target?: Target): void | Promise<void>;
   cue(kind: 'start' | 'stop' | 'error'): void;
 }
 export class SessionCoordinator {
@@ -106,7 +106,8 @@ export class SessionCoordinator {
           )
         )
           throw new AppError('Dictation is excluded in this application. Microphone remains off.');
-        this.ports.overlay(current.target);
+        await this.ports.overlay(current.target);
+        if (this.session !== current) return;
         const key = await this.ports.key();
         if (this.session !== current) return;
         const provider = this.ports.provider();
@@ -130,7 +131,8 @@ export class SessionCoordinator {
           return;
         }
         provider.begin();
-      } else this.ports.overlay();
+      } else await this.ports.overlay();
+      if (this.session !== current) return;
       await this.ports.record(current.id, settings.deviceId);
       if (this.session !== current) {
         await this.ports.stopRecord(current.id, true);
@@ -145,8 +147,8 @@ export class SessionCoordinator {
           ? 'Local microphone test. No audio is uploaded.'
           : settings.activation === 'single-key'
             ? settings.singleKeyMode === 'hold'
-              ? 'Listening. Release Right Ctrl to finish.'
-              : 'Listening. Tap and release Right Ctrl to finish.'
+              ? `Listening. Release ${settings.singleKey === 'fn' ? 'Fn' : 'Right Ctrl'} to finish.`
+              : `Listening. Tap and release ${settings.singleKey === 'fn' ? 'Fn' : 'Right Ctrl'} to finish.`
             : 'Listening. Press your shortcut again to finish.',
       );
       this.timer = setInterval(() => {

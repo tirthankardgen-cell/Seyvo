@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline';
 import { z } from 'zod';
 import { AppError } from '../shared/errors';
 import type { ShortcutEdge } from './single-key-shortcut';
+import { fnBindingSchema, type FnBinding } from './fn-key';
 export const targetSchema = z.object({
   token: z.string(),
   app: z.string(),
@@ -106,7 +107,7 @@ export class NativeBridge {
     return 'The original field is unavailable, changed, or protected. Nothing further was inserted. Copy your text or refocus the original field and retry.';
   }
   request(
-    command: 'ping' | 'capture' | 'insert' | 'clear' | 'cue' | 'watchShortcut',
+    command: 'ping' | 'capture' | 'insert' | 'clear' | 'cue' | 'watchShortcut' | 'probeFn',
     fields: Record<string, unknown> = {},
     timeoutMs = 5000,
   ): Promise<unknown> {
@@ -132,9 +133,17 @@ export class NativeBridge {
       await this.request('capture', { ownPid: process.pid, allowPractice }),
     );
   }
-  async watchShortcut(enabled: boolean): Promise<void> {
+  async probeFn(): Promise<FnBinding | undefined> {
+    const result = await this.request('probeFn', {}, 20000);
+    return result === null ? undefined : fnBindingSchema.parse(result);
+  }
+  async watchShortcut(enabled: boolean, fn?: FnBinding): Promise<void> {
     const generation = ++this.shortcutGeneration;
-    await this.request('watchShortcut', { enabled, generation });
+    await this.request('watchShortcut', {
+      enabled,
+      generation,
+      ...(fn ? { fn: fnBindingSchema.parse(fn) } : {}),
+    });
   }
   async cue(cue: 'start' | 'stop' | 'error'): Promise<void> {
     await this.request('cue', { cue });

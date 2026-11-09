@@ -87,6 +87,22 @@ test('custom placement persists, caret preview falls back safely, and preview ne
     await page.waitForTimeout(3300);
     expect((await geometry())?.visible).toBe(true);
     await page.evaluate(() => window.seyvo.action('micStop'));
+    await page.evaluate(() => window.seyvo.action('micTest'));
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().includes('#overlay'))!
+        .webContents.forcefullyCrashRenderer();
+    });
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).microphoneActive)
+      .toBe(false);
+    await expect
+      .poll(async () => (await page.evaluate(() => window.seyvo.status())).phase)
+      .toBe('error');
+    await page.evaluate(() => window.seyvo.action('micTest'));
+    await expect.poll(async () => (await geometry())?.visible).toBe(true);
+    expect((await page.evaluate(() => window.seyvo.status())).microphoneActive).toBe(true);
+    await page.evaluate(() => window.seyvo.action('micStop'));
     await quitApp(app);
     app = await electron.launch({ args, env });
     const reopened = await app.firstWindow();

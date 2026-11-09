@@ -25,13 +25,14 @@ export class Windows {
   private overlayReady?: Promise<void>;
   private overlayRequest = 0;
   private overlayTarget?: Target;
+  private overlayWanted = false;
   private acknowledgments = new Map<
     string,
     { kind: string; resolve: () => void; reject: (error: Error) => void; timer: NodeJS.Timeout }
   >();
   constructor(
     private settings: () => Settings,
-    private onCrash: () => void,
+    private onCrash: (error: AppError) => void,
     private quit: () => void,
   ) {
     session.defaultSession.setPermissionRequestHandler(
@@ -122,6 +123,7 @@ export class Windows {
   async showOverlay(target?: Target): Promise<void> {
     if (this.quitting || !this.settings().showOverlay) return;
     const request = ++this.overlayRequest;
+    this.overlayWanted = true;
     this.overlayTarget = target;
     if (!this.overlay || this.overlay.isDestroyed()) {
       const window = new BrowserWindow({
@@ -135,18 +137,41 @@ export class Windows {
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
         hasShadow: false,
         webPreferences: this.webPreferences(),
       });
       this.overlay = window;
       this.secure(window);
       window.setIgnoreMouseEvents(true);
+      window.webContents.on('render-process-gone', () => {
+        if (this.overlay !== window) return;
+        this.overlayWanted = false;
+        this.overlay = undefined;
+        this.overlayReady = undefined;
+        if (!window.isDestroyed()) window.destroy();
+        this.onCrash(
+          new AppError(
+            'The dictation bubble stopped unexpectedly. Recording stopped; please retry.',
+          ),
+        );
+      });
       this.overlayReady = window.loadURL(this.url('index.html') + '#overlay');
     }
     await this.overlayReady;
     if (request !== this.overlayRequest || this.quitting || !this.settings().showOverlay) return;
+    if (!this.overlay || this.overlay.isDestroyed())
+      throw new AppError('The dictation bubble could not open. Restart Seyvo and retry.');
     this.positionOverlay();
+    this.revealOverlay();
+  }
+  private revealOverlay(): void {
+    if (!this.overlay || this.overlay.isDestroyed()) return;
+    this.overlay.setAlwaysOnTop(true, 'screen-saver');
     this.overlay.showInactive();
+    this.overlay.moveTop();
   }
   refreshOverlay(): void {
     if (this.overlay?.isVisible()) this.positionOverlay();
@@ -167,11 +192,22 @@ export class Windows {
     this.overlay.setBounds(overlayBounds(area, this.settings(), caret));
   }
   hideOverlay(): void {
+    this.overlayWanted = false;
     ++this.overlayRequest;
     this.overlayTarget = undefined;
     if (this.overlay && !this.overlay.isDestroyed()) this.overlay.hide();
   }
   broadcast(status: Status): void {
+    // Windows can hide a tray overlay (for example through Show Desktop).
+    // Active status updates must restore feedback without activating a window.
+    if (
+      this.overlayWanted &&
+      this.overlay &&
+      !this.overlay.isDestroyed() &&
+      !this.overlay.webContents.isLoadingMainFrame() &&
+      (!this.overlay.isVisible() || this.overlay.isMinimized())
+    )
+      this.revealOverlay();
     for (const window of [this.dashboard, this.overlay])
       if (window && !window.isDestroyed() && !window.webContents.isLoadingMainFrame())
         window.webContents.send(
@@ -216,7 +252,7 @@ export class Windows {
             error: 'The recorder stopped unexpectedly. Microphone is off.',
           });
         if (!window.isDestroyed()) window.destroy();
-        this.onCrash();
+        this.onCrash(new AppError('The recorder stopped unexpectedly. Microphone is off.'));
       });
       this.recorderReady = window.loadURL(this.url('recorder.html'));
     }

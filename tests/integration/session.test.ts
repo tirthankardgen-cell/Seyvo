@@ -38,6 +38,36 @@ function fixture() {
   return { settings, provider, ports, coordinator: new SessionCoordinator(ports) };
 }
 describe('single session authority', () => {
+  it('does not open the microphone when bubble loading fails', async () => {
+    const f = fixture();
+    vi.mocked(f.ports.overlay).mockRejectedValueOnce(new AppError('Bubble unavailable.'));
+    await f.coordinator.start();
+    expect(f.coordinator.phase).toBe('error');
+    expect(f.coordinator.microphoneActive).toBe(false);
+    expect(f.ports.record).not.toHaveBeenCalled();
+    expect(f.provider.connect).not.toHaveBeenCalled();
+  });
+  it.each([false, true])(
+    'release during bubble loading cannot open a delayed microphone (local=%s)',
+    async (local) => {
+      const f = fixture();
+      let loaded!: () => void;
+      vi.mocked(f.ports.overlay).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            loaded = resolve;
+          }),
+      );
+      const starting = f.coordinator.start(local);
+      await vi.waitFor(() => expect(f.ports.overlay).toHaveBeenCalledOnce());
+      await f.coordinator.cancel();
+      loaded();
+      await starting;
+      expect(f.ports.record).not.toHaveBeenCalled();
+      expect(f.coordinator.microphoneActive).toBe(false);
+      expect(f.coordinator.phase).toBe('idle');
+    },
+  );
   it.each(['paste', 'unicode', 'copy'] as const)(
     'cancellation revokes %s delivery while history persistence is pending',
     async (method) => {

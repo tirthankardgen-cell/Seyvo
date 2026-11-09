@@ -17,6 +17,7 @@ function fixture(mode: 'hold' | 'toggle' = 'hold') {
       phase = 'idle';
     }),
     error: vi.fn(),
+    pending: vi.fn(),
   };
   const shortcut = new SingleKeyShortcut(ports);
   shortcut.configure(true, mode);
@@ -30,9 +31,33 @@ function fixture(mode: 'hold' | 'toggle' = 'hold') {
 }
 afterEach(() => vi.useRealTimers());
 describe('single-key activation', () => {
+  it('a stale rejected start cannot disarm the next held session', async () => {
+    const f = fixture();
+    let reject!: (error: Error) => void;
+    f.ports.start.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, fail) => {
+          reject = fail;
+        }),
+    );
+    f.shortcut.edge('down');
+    await vi.advanceTimersByTimeAsync(3000);
+    f.shortcut.edge('up');
+    f.shortcut.edge('down');
+    await vi.advanceTimersByTimeAsync(3000);
+    f.phase('listening');
+    reject(new Error('Old activation failed'));
+    await vi.advanceTimersByTimeAsync(0);
+    f.shortcut.edge('up');
+    expect(f.ports.stop).toHaveBeenCalledOnce();
+    expect(f.ports.error).not.toHaveBeenCalled();
+  });
   it('preserves existing shortcuts on migration and validates only the new preferences', () => {
     const migrated = settingsSchema.parse({ shortcut: 'Control+Alt+Space' });
     expect(migrated.activation).toBe('shortcut');
+    expect(migrated.singleKey).toBe('right-control');
+    expect(settingsPatchSchema.safeParse({ singleKey: 'fn' }).success).toBe(true);
+    expect(settingsPatchSchema.safeParse({ singleKey: 'a' }).success).toBe(false);
     expect(migrated.shortcut).toBe('Control+Alt+Space');
     expect(settingsPatchSchema.parse({ activation: 'single-key' })).toEqual({
       activation: 'single-key',
@@ -42,9 +67,11 @@ describe('single-key activation', () => {
   it('requires a continuous three seconds and ignores autorepeat', async () => {
     const f = fixture();
     f.shortcut.edge('down');
+    expect(f.ports.pending).toHaveBeenLastCalledWith(true);
     await vi.advanceTimersByTimeAsync(2999);
     expect(f.ports.start).not.toHaveBeenCalled();
     f.shortcut.edge('up');
+    expect(f.ports.pending).toHaveBeenLastCalledWith(false);
     await vi.advanceTimersByTimeAsync(5000);
     expect(f.ports.start).not.toHaveBeenCalled();
     f.shortcut.edge('down');

@@ -185,6 +185,7 @@ try {
         shortcut: 'F8',
         activation: singleKey ? 'single-key' : 'shortcut',
         singleKeyMode: 'hold',
+        ...(singleKey ? { singleKey: 'right-control', showOverlay: true, captions: false } : {}),
         insertion: insertionMethod,
         paused: false,
         deviceId: 'default',
@@ -294,11 +295,28 @@ try {
     if (singleKey) {
       await new Promise((done) => setTimeout(done, 2400));
       assert.equal((await page.evaluate(() => window.seyvo.status())).microphoneActive, false);
+      const bubble = context.pages().find((candidate) => candidate.url().includes('#overlay'));
+      assert.ok(bubble, 'Hold feedback must exist before recording.');
+      assert.equal(await bubble.evaluate(() => document.visibilityState), 'visible');
+      assert.equal(await bubble.locator('.bubble strong').textContent(), 'Hold to start');
     }
     const recording = await waitPhase(['listening', 'error']);
     assert.equal(recording.phase, 'listening', recording.message);
     assert.equal(recording.targetApp.toLowerCase(), 'testhost.exe');
     assert.equal(recording.microphoneActive, true);
+    if (singleKey) {
+      const bubble = context.pages().find((candidate) => candidate.url().includes('#overlay'));
+      await bubble.waitForFunction(
+        () =>
+          document.visibilityState === 'visible' &&
+          document.querySelector('.bubble strong')?.textContent === 'Listening',
+      );
+      report.visibleHoldAndListeningBubbles = true;
+      if (!hardware) {
+        await mkdir('artifacts/live', { recursive: true });
+        await bubble.screenshot({ path: `artifacts/live/installed-hold-bubble-${cycle + 1}.png` });
+      }
+    }
     if (singleKey && cycle === 1) {
       assert.equal(await command('right-control-up'), 'key-sent');
       await new Promise((done) => setTimeout(done, 300));
