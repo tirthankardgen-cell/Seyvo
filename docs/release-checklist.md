@@ -20,6 +20,10 @@ The previous [0.1.9 validation prerelease](https://github.com/tirthankardgen-cel
 
 The actual hosted 0.1.9 installer download matches the current SHA256/size above. Canonical installer and checksum URLs returned HTTP 200. At 0.1.9 publication GitHub listed only that unsigned prerelease after removing superseded releases; historical source tags remain. The normal installed app is ready with the microphone off and the saved Ctrl+Alt+Space shortcut. Trusted signing and commercial/stable promotion are deferred to a separate follow-up after the Foundation's review. The documented unverified Windows checks and intermittent shutdown-test observation remain limitations; they have not been marked as passed.
 
-## Latest candidate: 0.1.10
+## Previous candidate: 0.1.10
 
 `dist/Seyvo-0.1.10-windows-x64-setup.exe`, build `64ba3b8651e3`, 124746257 bytes, SHA256 `f734d86958470696de817a4ef8e92a44b2620f39946aa604393c9af32e5f0dac`. The installed upgrade, unchanged encrypted key and prior preferences, packaged smoke, both Right Ctrl modes with real Google/generated speech, original-field insertion, microphone teardown and clean exit passed. Windows CI passed all 73 core tests and 12 Electron scenarios. This is an unsigned validation prerelease. Physical keyboard/human-language tests and the existing stable gates were not repeated or waived. Detailed observations are in [shortcut validation](shortcut-validation-0.1.10.md).
+
+## Latest candidate: 0.1.11
+
+Installer `dist/Seyvo-0.1.11-windows-x64-setup.exe`, source `6bb9f44c6c382a72fea0410254237946e317371a`, 124749383 bytes, SHA256 `8b762776afd639ce02c8b094419f98f19d4cd9ec2909eb347336becb2413adaf`. The installed upgrade, preserved encrypted key/preferences, packaged smoke, real-Google/generated-speech hold/toggle with visible bubbles and exact paste, track teardown and clean exit passed. All 79 core tests and 14 Electron scenarios passed locally and in Windows CI. The hosted installer was downloaded and its full hash matched. Fn is selectable after a hardware compatibility check; seeded mapping tests are not physical Fn acceptance. This remains an unsigned prerelease; existing stable gates are open. See [the detailed record](shortcut-validation-0.1.11.md).

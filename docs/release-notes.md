@@ -1,14 +1,15 @@
-Seyvo 0.1.10 — optional one-key dictation.
+Seyvo 0.1.11 fixes single-key dictation feedback and release handling.
 
-Your existing key combination stays selected by default. In Settings, choose **Activation method → Single key → Right Ctrl**, then choose:
+- The bubble appears during the three-second hold with Microphone off, then shows Listening. A hidden active bubble is restored without taking focus; a crashed bubble stops recording.
+- A Windows held-key check recovers missed release events so hold-to-talk ends when the key is released.
+- Fn remains selectable. Its 12-second hardware check requires two physical hold/release pairs before enabling a supported Fn mapping. Firmware-only Fn and unsupported vendor events cannot be detected; physical Fn compatibility has not been validated on a supported keyboard.
 
-- **Hold to talk:** hold Right Ctrl for three seconds, speak while holding, and release to finish.
-- **Hold to start:** hold for three seconds, release and speak, then tap/release Right Ctrl again to finish.
+Verified: 79 core tests and 14 Electron scenarios, successful Windows CI, installed upgrade with unchanged encrypted key/preferences, physical microphone open/select/stop, production fuses, and two installed real-Google/generated-speech sessions with visible bubbles, exact paste, ended tracks and clean exit. Scripted Windows key events and seeded Fn mappings are distinct from physical-key acceptance.
 
-Wait for Listening before speaking. Short presses do not open the microphone, normal Ctrl combinations keep working, and Pause disables the listener. Switching back restores your saved combination. Bare Fn has no standard Windows key event and is shown as unavailable; it is not advertised as working.
+Unsigned Windows x64 validation prerelease. Signing, clean-machine and broader physical acceptance gates remain open. No automatic updater is included.
 
-Verified on installed build `64ba3b8651e3`: both gestures through actual Windows input events, real Google transcription of generated speech, exact native insertion, microphone teardown, upgrade with unchanged encrypted key/preferences, and packaged smoke checks. These are automated Windows key events, not physical keyboard presses or a new human-speech accuracy claim. The source passed 73 core tests and all 12 Electron scenarios in Windows CI. See [the validation record](https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/shortcut-validation-0.1.10.md).
-
-This is an **unsigned Windows x64 validation prerelease**, not a stable release. Signing, clean-machine and remaining physical acceptance gates remain open. No automatic updater is included.
-
-Installer SHA256: `f734d86958470696de817a4ef8e92a44b2620f39946aa604393c9af32e5f0dac`.
+Installer SHA256: 8b762776afd639ce02c8b094419f98f19d4cd9ec2909eb347336becb2413adaf
+Installer size: 124749383 bytes
+Built application source: 6bb9f44c6c382a72fea0410254237946e317371a
+CI: https://github.com/tirthankardgen-cell/Seyvo/actions/runs/42691770191
+Validation: https://github.com/tirthankardgen-cell/Seyvo/blob/main/docs/shortcut-validation-0.1.11.md

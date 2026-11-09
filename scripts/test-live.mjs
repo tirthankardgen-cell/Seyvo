@@ -157,9 +157,21 @@ try {
   });
   browser = await chromium.connectOverCDP(endpoint);
   const context = browser.contexts()[0];
-  page =
-    context.pages().find((p) => p.url().includes('index.html') && !p.url().includes('#')) ??
-    (await context.waitForEvent('page'));
+  // Start-minimized profiles create the hidden recorder first. Never mistake
+  // that page (which cannot invoke dashboard IPC) for the application window.
+  const dashboardDeadline = Date.now() + 20000;
+  while (!(page = context.pages().find((p) => p.url().endsWith('index.html')))) {
+    assert.ok(
+      child.exitCode === null && Date.now() < dashboardDeadline,
+      'The installed dashboard did not open.',
+    );
+    spawn(
+      child.spawnfile,
+      child.spawnargs.slice(1).filter((arg) => !arg.startsWith('--remote-debugging-port')),
+      { env, windowsHide: true, stdio: 'ignore' },
+    );
+    await new Promise((done) => setTimeout(done, 700));
+  }
   await page.waitForFunction(() => Boolean(window.seyvo));
   const initial = await page.evaluate(() => window.seyvo.status());
   report.version = initial.version;
@@ -483,6 +495,7 @@ try {
       const {
         shortcut,
         activation,
+        singleKey: selectedKey,
         singleKeyMode,
         insertion,
         paused,
@@ -495,6 +508,7 @@ try {
         .evaluate((patch) => window.seyvo.updateSettings(patch), {
           shortcut,
           activation,
+          singleKey: selectedKey,
           singleKeyMode,
           insertion,
           paused,
